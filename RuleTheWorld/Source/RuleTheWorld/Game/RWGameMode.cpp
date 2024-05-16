@@ -180,5 +180,3 @@ void ARWGameMode::DecreaseCurrentAnimalNum(ARWAnimalBase* Animal)
 		AnimalCurrentNumMap[AnimalClass]--;
 	}
 }
-
-

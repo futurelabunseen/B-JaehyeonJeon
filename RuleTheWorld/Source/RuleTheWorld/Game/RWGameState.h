@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
+#include "Net/UnrealNetwork.h"
 #include "RWGameState.generated.h"
 
 /**
@@ -20,7 +21,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
-	TObjectPtr<class ARWGameMode> GameMode;
+	TObjectPtr<class ARWGameMode> RWGameMode;
 // Network
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -32,12 +33,14 @@ protected:
 	
 	void RequestTimeVariableFromServer();
 	*/
-
+	
 	UPROPERTY(BlueprintReadOnly, Category = "Time")
 	FTimerHandle TimerHandle_RequestGameTime;
 
 	// Time Variable
-	void UpdateTime(float DeltaSeconds);
+	
+	/*void UpdateTime(float DeltaSeconds);
+	*/
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "Time")
 	int32 DayScore;
@@ -46,6 +49,8 @@ protected:
 	float CurrentTime;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Replicated, Category = "Time")
 	float DayProgressPercent;
+
+	void UpdateTimeFromGameMode();
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Day, Meta = (AllowPrivateAccess = "true"))
 	int32 CurrentHour;

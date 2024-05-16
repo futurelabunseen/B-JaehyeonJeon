@@ -17,8 +17,6 @@ DECLARE_MULTICAST_DELEGATE(FOnStarvingDelegate);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnHungerChangedDelegate, float /*CurrentHunger*/)
 
 
-
-
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class RULETHEWORLD_API URWCharacterStatComponent : public UActorComponent
 {
@@ -66,6 +64,4 @@ protected:
 	float MaxHunger;
 	UPROPERTY(Transient, VisibleInstanceOnly, Category = "Stat")
 	float CurrentHunger;
-
-	
 };
