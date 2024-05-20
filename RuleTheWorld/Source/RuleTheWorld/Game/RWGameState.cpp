@@ -2,7 +2,6 @@
 
 
 #include "Game/RWGameState.h"
-#include "Game/RWGameMode.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -27,46 +26,39 @@ ARWGameState::ARWGameState()
 void ARWGameState::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// Server Code
-	if(HasAuthority())
-	{
-		RWGameMode = Cast<ARWGameMode>(GetWorld()->GetAuthGameMode());
-	}
+	// UpdateTime 함수를 1초마다 호출
+	GetWorld()->GetTimerManager().SetTimer(TimeUpdateHandle, this, &ARWGameState::CalcTimeVariable, 0.2f, true);
 }
 
 void ARWGameState::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
-	// ServerCode
-	if(HasAuthority())
-	{
-		UpdateTimeFromGameMode();
-	}
 }
 
 void ARWGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ARWGameState, CurrentTime);	
+	DOREPLIFETIME(ARWGameState, DayScore);
 }
 
-// ServerOnly
-void ARWGameState::UpdateTimeFromGameMode()
+// Timer를 통홰 호출
+void ARWGameState::CalcTimeVariable()
 {
-	// Current Time 변수 값을 GameMode에서 받아옴 
-	CurrentTime = RWGameMode->GetCurrentTime();
-	// Day Change
-	if(CurrentTime >= ONE_DAY_CLIENT)
-	{
-		DayScore++;
-		CurrentTime -= ONE_DAY_CLIENT;
-		UE_LOG(LogTemp, Log, TEXT("Game State - Day : %d CurrentTime : %f ProgressPercent : %f"), DayScore, CurrentTime, DayProgressPercent);
-	}
 	DayProgressPercent = 100 * (CurrentTime / ONE_DAY_CLIENT);
 	CurrentHour = CurrentTime / ONE_HOUR_CLIENT;
 	CurrentMinute = ((60/ONE_HOUR_CLIENT) * static_cast<int32>(CurrentTime)) % 60;
+}
+
+// GameMode에서 Data를 넘겨줄 때 사용
+void ARWGameState::SetCurrentTime(float InputCurrnetTime)
+{
+	CurrentTime = InputCurrnetTime;
+}
+// GameMode에서 Data를 넘겨줄 때 사용
+void ARWGameState::SetDayScore(int32 InputDayScore)
+{
+	DayScore = InputDayScore;
 }
 
 float ARWGameState::GetClientCurrentTime() const

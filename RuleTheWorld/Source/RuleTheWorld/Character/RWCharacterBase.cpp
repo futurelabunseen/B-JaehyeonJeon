@@ -8,7 +8,6 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Components/BoxComponent.h"
-#include "Animal/RWAnimalBase.h"
 #include "Engine/DamageEvents.h"
 #include "Object/RWInteractableActor.h"
 #include "Stat/RWCharacterStatComponent.h"
@@ -84,7 +83,6 @@ void ARWCharacterBase::PostInitializeComponents()
 	StatComponent->OnHPZero.AddUObject(this, &ARWCharacterBase::SetDead);
 	// Hungry가 Max가 되면 Staring으로 변경 -> -> Delegate로 Stat Component와 연결
 	StatComponent->OnStarving.AddUObject(this, &ARWCharacterBase::SetStarving);
-	
 }
 
 void ARWCharacterBase::SetUpCharacterWidget(URWMainWidget* MainWidget)
@@ -196,12 +194,7 @@ float ARWCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 {
 	// EventInstigator -> 나에게 피해를 입힌 Controller, DamageCauser -> 사용한 무기 또는 빙의한 폰 (데미지를 준) 
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-
-	/*
-	// 사망
-	SetDead();
-	*/
-
+	
 	// Damage 받은 것을 StatComponent에서 적용시킴
 	StatComponent->ApplyDamage(DamageAmount);
 	
@@ -209,6 +202,16 @@ float ARWCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 }
 
 void ARWCharacterBase::SetDead()
+{
+	ServerRPCSetDead();
+}
+
+void ARWCharacterBase::ServerRPCSetDead_Implementation()
+{
+	MulticastRPCSetDead();
+}
+
+void ARWCharacterBase::MulticastRPCSetDead_Implementation()
 {
 	PlayDeadAnimation();
 	// 사망 시 이동 제한
@@ -220,7 +223,6 @@ void ARWCharacterBase::SetDead()
 
 void ARWCharacterBase::PlayDeadAnimation()
 {
-	UE_LOG(LogTemp, Log, TEXT("ddd"))
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	AnimInstance->StopAllMontages(0.0f);
 	AnimInstance->Montage_Play(DeadMontage, 1.0f);

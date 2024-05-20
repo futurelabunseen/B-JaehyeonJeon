@@ -9,12 +9,8 @@
 #include "Blueprint/UserWidget.h"
 
 #include "Character/RWCharacterPlayer.h"
-#include "Components/SceneCaptureComponent2D.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "Object/RWInteractableActor.h"
 
-constexpr int32 MAX_COMBO = 3;
 
 ARWPlayerController::ARWPlayerController()
 {
@@ -97,43 +93,18 @@ void ARWPlayerController::BeginPlay()
 	{
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	}
-	
 	// Player
 	PlayerPawn = Cast<ARWCharacterPlayer>(GetPawn());
-	ENetMode NM = GetNetMode();
-	FText NetModeName;
-	if(NM == NM_Client)
+
+
+	// Local Controller인 경우에만
+	if(IsLocalController())
 	{
-		UE_LOG(LogTemp, Log, TEXT("Player Controller : It is NM_Client"));
-	}
-	else if(NM == NM_ListenServer)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Player Controller : It is NM_ListnServer"));
-	}
-	else if(NM == NM_Standalone)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Player Controller : It is Standalone"));
+		// UI 생성
+		HUDInstancing();
+		HUDAddToViewport();
 	}
 	
-	if(PlayerPawn)
-	{
-		
-		UE_LOG(LogTemp, Log, TEXT("Player Controller : It is GetAnimInstance"));
-		
-		AnimInstance = PlayerPawn->GetMesh()->GetAnimInstance();	
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("Player Comtroller : It Can't GetAniminstance"))
-	}
-
-	// UI
-	HUDInstancing();
-	HUDAddToViewport();
-	
-
-	// ComboAttack
-	SetComboAttackMontages();
 }
 
 
@@ -169,7 +140,7 @@ void ARWPlayerController::PostNetInit()
 	Super::PostNetInit();
 }
 
-void ARWPlayerController::HUDInstancing_Implementation()
+void ARWPlayerController::HUDInstancing()
 {
 	if (HUDWidgetClass != nullptr)
 	{
@@ -177,7 +148,7 @@ void ARWPlayerController::HUDInstancing_Implementation()
 	}
 }
 
-void ARWPlayerController::HUDAddToViewport_Implementation()
+void ARWPlayerController::HUDAddToViewport()
 {
 	if (HUDWidgetInstance != nullptr)
 	{
@@ -276,7 +247,8 @@ void ARWPlayerController::StopRunning(const FInputActionValue& Value)
 
 void ARWPlayerController::Attack(const FInputActionValue& Value)
 {
-	ProcessComboCommand();
+	//ProcessComboCommand();
+	PlayerPawn->Attack();
 }
 
 void ARWPlayerController::Sneaking(const FInputActionValue& Value)
@@ -326,73 +298,5 @@ void ARWPlayerController::StopFocusing(const FInputActionValue& Value)
 	FocusingTargetActor = nullptr;
 }
 
-void ARWPlayerController::ProcessComboCommand()
-{
-	if(CurrentCombo == 0)
-	{
-		ComboAction();
-	}
-	else
-	{
-		bHasNextComboCommand = true;
-	}
-}
 
-void ARWPlayerController::ComboAction()
-{
-	// Movement Setting
-	PlayerPawn->GetCharacterMovement()->SetMovementMode(MOVE_None);
-
-	// Animation Setting
-	const float AttackSpeedRate = 1.0f;
-
-	if(PlayerPawn->bIsAnimalInBound)
-	{ // 근처에 동물이 있다면 발차기 공격을 수행
-		AnimInstance->Montage_Play(ComboKickMontages[CurrentCombo], AttackSpeedRate);
-	}
-	else
-	{ // 그게 아니면 일반 공격(펀치) 수행
-		AnimInstance->Montage_Play(ComboAttackMontages[CurrentCombo], AttackSpeedRate);
-	}
-	
-	
-	bHasNextComboCommand = false;
-	
-	// Combo Status
-	float RateTime; 
-	if(CurrentCombo == MAX_COMBO)
-	{
-		CurrentCombo = 1;
-		RateTime = 1.5f;
-	}
-	else
-	{
-		CurrentCombo = FMath::Clamp(CurrentCombo + 1, 1, MAX_COMBO);
-		RateTime = 1.0f;
-	}
-	GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &ARWPlayerController::CheckInput, RateTime, false);
-}
-
-void ARWPlayerController::CheckInput()
-{
-	AttackTimerHandle.Invalidate();
-	PlayerPawn->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-
-	// Non Attack
-	if(!bHasNextComboCommand)
-	{
-		CurrentCombo = 0;
-	}
-	else // Next Attack
-	{
-		bHasNextComboCommand = false;
-		ComboAction();
-	}
-}
-
-void ARWPlayerController::SetComboAttackMontages()
-{
-	ComboAttackMontages = {ComboAttackMontage1, ComboAttackMontage2, ComboAttackMontage3, ComboAttackMontage4};
-	ComboKickMontages = {ComboKickMontage1, ComboKickMontage2, ComboKickMontage3, ComboKickMontage4};
-}
 

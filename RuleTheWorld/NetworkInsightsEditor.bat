@@ -1,0 +1,1 @@
+UnrealEditor.exe %cd%\RuleTheWorld.upoject -NetTrace=1 -Trace=Net

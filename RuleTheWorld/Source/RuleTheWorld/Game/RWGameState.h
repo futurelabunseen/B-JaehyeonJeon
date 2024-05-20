@@ -36,28 +36,31 @@ protected:
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Time")
 	FTimerHandle TimerHandle_RequestGameTime;
-
-	// Time Variable
-	
-	/*void UpdateTime(float DeltaSeconds);
-	*/
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "Time")
 	int32 DayScore;
-
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Replicated, Category = "Time")
 	float CurrentTime;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Replicated, Category = "Time")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Time")
 	float DayProgressPercent;
 
-	void UpdateTimeFromGameMode();
+	// CurrentTime 변수를 바탕으로 CurrentHour와 Current Minute, DayProgressPercent를 계산
+	UFUNCTION()
+	void CalcTimeVariable();
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Day, Meta = (AllowPrivateAccess = "true"))
 	int32 CurrentHour;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Day, Meta = (AllowPrivateAccess = "true"))
 	int32 CurrentMinute;
-
+	
+	FTimerHandle TimeUpdateHandle;
+	
 public:
+	UFUNCTION()
+	void SetCurrentTime(float InputCurrnetTime);
+	UFUNCTION()
+	void SetDayScore(int32 InputDayScore);
+	
 	float GetClientCurrentTime() const;
 	float GetClientDayProgressPercent() const;
 	int32 GetClientDayScore() const;

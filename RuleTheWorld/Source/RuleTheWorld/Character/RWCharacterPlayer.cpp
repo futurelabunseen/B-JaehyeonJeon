@@ -6,11 +6,12 @@
 
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Player/RWPlayerState.h"
-#include "AbilitySystemComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Engine/CanvasRenderTarget2D.h"
+#include "Net/UnrealNetwork.h"
 
+constexpr int32 MAX_COMBO = 3;
 
 ARWCharacterPlayer::ARWCharacterPlayer()
 {
@@ -43,18 +44,9 @@ ARWCharacterPlayer::ARWCharacterPlayer()
 	MiniMapSceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("MiniMapSceneCaptrue"));
 	MiniMapSceneCapture->SetupAttachment(MiniMapSpringArm, USpringArmComponent::SocketName);
 	MiniMapSceneCapture->ProjectionType = ECameraProjectionMode::Orthographic;
-
-	
-	
-	// GAS
-	// ASC is bring from PlayerState at PossessedBy()
-	ASC = nullptr;
 }
 
-UAbilitySystemComponent* ARWCharacterPlayer::GetAbilitySystemComponent() const
-{
-	return ASC;
-}
+
 
 void ARWCharacterPlayer::BeginPlay()
 {
@@ -64,8 +56,14 @@ void ARWCharacterPlayer::BeginPlay()
 	// 각 Client마다 생성된 이후에 지정해주어야 하기 때문에, BeginPlay에서 지정
 	UCanvasRenderTarget2D* MinimapCanvasRenderTarget = UCanvasRenderTarget2D::CreateCanvasRenderTarget2D(GetWorld(), UCanvasRenderTarget2D::StaticClass(), 1024, 1024);
 	MiniMapSceneCapture->TextureTarget = MinimapCanvasRenderTarget;
-
 	
+	// Get AnimInstance
+	AnimInstance = GetMesh()->GetAnimInstance();
+
+	// ComboAttack
+	ComboAttackMontages = {ComboAttackMontage1, ComboAttackMontage2, ComboAttackMontage3, ComboAttackMontage4};
+	ComboKickMontages = {ComboKickMontage1, ComboKickMontage2, ComboKickMontage3, ComboKickMontage4};
+
 }
 
 
@@ -75,32 +73,117 @@ void ARWCharacterPlayer::OnRep_PlayerState()
 	
 }
 
-	void ARWCharacterPlayer::PossessedBy(AController* NewController)
+void ARWCharacterPlayer::PossessedBy(AController* NewController)
 {
 
 	Super::PossessedBy(NewController);
 	
-	
-	ARWPlayerState* RWPS = GetPlayerState<ARWPlayerState>();
-	if(RWPS)
-	{
-		ASC = RWPS->GetAbilitySystemComponent();
-		
-		// Owner Actor와 Avatar Actor가 정해졌으니 초기화
-		ASC->InitAbilityActorInfo(RWPS, this);
-		
-
-		for(const auto& StartAbility : StartAbilities)
-		{
-			FGameplayAbilitySpec StartSpec(StartAbility);
-			ASC->GiveAbility(StartSpec);
-		}
-		
-		APlayerController* PlayerController = CastChecked<APlayerController>(NewController);
-		PlayerController->ConsoleCommand(TEXT("showdebug abilitysystem"));
-	}
-	
 }
 
+void ARWCharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(ARWCharacterPlayer, CurrentCombo);
+	DOREPLIFETIME(ARWCharacterPlayer, bHasNextComboCommand);
+	
+	DOREPLIFETIME(ARWCharacterPlayer, bIsAttacking);
+}
 
+void ARWCharacterPlayer::Attack()
+{
+	// 땅 위에 있을 때만 공격 가능하도록
+	if(GetMovementComponent()->Velocity.Z != 0)
+	{
+		return;
+	}
+	ServerRPCAttack();
+}
 
+void ARWCharacterPlayer::AttackHitCheck()
+{
+	Super::AttackHitCheck();
+}
+
+void ARWCharacterPlayer::ServerRPCAttack_Implementation()
+{
+	MulticastRPCAttack();
+}
+
+bool ARWCharacterPlayer::ServerRPCAttack_Validate()
+{
+	return true;
+}
+
+void ARWCharacterPlayer::MulticastRPCAttack_Implementation()
+{
+	// 공격 중이 아닐 때, Animation 재생
+	if(!bIsAttacking)
+	{
+		// Animation Setting
+		const float AttackSpeedRate = 1.0f;
+	
+		if(bIsAnimalInBound)
+		{ // 근처에 동물이 있다면 발차기 공격을 수행
+			AnimInstance->Montage_Play(ComboKickMontages[CurrentCombo], AttackSpeedRate);
+		}
+		else
+		{ // 그게 아니면 일반 공격(펀치) 수행
+			AnimInstance->Montage_Play(ComboAttackMontages[CurrentCombo], AttackSpeedRate);
+		}
+	}
+	// 서버에서 콤보액션 관련 변수를 처리
+	if(HasAuthority())
+	{
+		ComboActionProcessing();
+	}
+}
+
+// Server Only
+// 서버에서 콤보액션과 관련한 변수들을 관리하도록 하는 함수
+void ARWCharacterPlayer::ComboActionProcessing()
+{
+	if(bIsAttacking)
+	{
+		return;
+	}
+	
+	bIsAttacking = true;
+
+	// Movement Setting
+	GetCharacterMovement()->SetMovementMode(MOVE_None);
+	
+	// Combo Status
+	float RateTime; 
+	if(CurrentCombo == MAX_COMBO)
+	{
+		CurrentCombo = 1;
+		RateTime = 1.8f;
+	}
+	else
+	{
+		CurrentCombo = FMath::Clamp(CurrentCombo + 1, 1, MAX_COMBO);
+		RateTime = 1.0f;
+	}
+	GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &ARWCharacterPlayer::PostComboAttack, RateTime, false);
+}
+
+// Server Only
+// 서버에서 콤보액션과 관련한 변수들을 관리하도록 하는 함수 (공격 후처리)
+void ARWCharacterPlayer::PostComboAttack()
+{
+	AttackTimerHandle.Invalidate();
+	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	
+	// 공격 상태 해제
+	bIsAttacking = false;
+	
+	if(!bHasNextComboCommand) // Non Attack
+	{
+		CurrentCombo = 0;
+	}
+	else // Next Attack
+	{
+		bHasNextComboCommand = false;
+	}
+}

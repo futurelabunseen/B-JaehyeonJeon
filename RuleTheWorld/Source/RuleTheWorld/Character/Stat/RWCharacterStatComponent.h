@@ -64,4 +64,7 @@ protected:
 	float MaxHunger;
 	UPROPERTY(Transient, VisibleInstanceOnly, Category = "Stat")
 	float CurrentHunger;
+
+
+	void IncreaseHungerOverTime();
 };

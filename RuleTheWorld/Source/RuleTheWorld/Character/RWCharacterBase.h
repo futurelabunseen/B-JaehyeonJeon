@@ -49,8 +49,13 @@ protected:
 // Dead Section
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAnimMontage> DeadMontage;
+
+	void SetDead();
+	UFUNCTION(Server, Reliable)
+	void ServerRPCSetDead();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCSetDead();
 	
-	virtual void SetDead();
 	void PlayDeadAnimation();
 
 	float DeadEventDelayTime = 5.0f;

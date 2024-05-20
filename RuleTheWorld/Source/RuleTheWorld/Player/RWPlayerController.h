@@ -38,9 +38,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TObjectPtr<class UUserWidget> HUDWidgetInstance;
-	UFUNCTION(Client, Reliable)
 	void HUDInstancing();
-	UFUNCTION(Client, Reliable)
 	void HUDAddToViewport();
 	
 
@@ -109,45 +107,6 @@ protected:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "True"))
 	uint8 bIsFocusing:1;
-	
-// Combo Attack Section
-protected:
-
-	TObjectPtr<class UAnimInstance> AnimInstance;
-	int32 CurrentCombo = 0;
-	uint8 bHasNextComboCommand:1 = false;
-
-	// ComboPunch
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
-	TObjectPtr<class UAnimMontage> ComboAttackMontage1;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
-	TObjectPtr<class UAnimMontage> ComboAttackMontage2;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
-	TObjectPtr<class UAnimMontage> ComboAttackMontage3;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
-	TObjectPtr<class UAnimMontage> ComboAttackMontage4;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
-	TArray<TObjectPtr<class UAnimMontage>> ComboAttackMontages;
-
-	// ComboKick
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
-	TObjectPtr<class UAnimMontage> ComboKickMontage1;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
-	TObjectPtr<class UAnimMontage> ComboKickMontage2;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
-	TObjectPtr<class UAnimMontage> ComboKickMontage3;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
-	TObjectPtr<class UAnimMontage> ComboKickMontage4;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
-	TArray<TObjectPtr<class UAnimMontage>> ComboKickMontages;
-	
-	void ProcessComboCommand();
-	void ComboAction();
-	void CheckInput();
-	void SetComboAttackMontages();
-	FTimerHandle AttackTimerHandle;
 
 // Inventory
 

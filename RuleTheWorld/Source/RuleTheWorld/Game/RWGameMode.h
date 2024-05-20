@@ -19,6 +19,8 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
+
+	TObjectPtr<class ARWGameState> GameState;
 	
 // Game Time
 protected:

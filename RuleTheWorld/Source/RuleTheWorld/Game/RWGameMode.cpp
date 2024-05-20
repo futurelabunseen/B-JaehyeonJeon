@@ -78,7 +78,7 @@ ARWGameMode::ARWGameMode()
 
 	// Animal
 	// Set Initial Value
-	AnimalMaxNumMap.Add(WolfClass, 3);
+	AnimalMaxNumMap.Add(WolfClass, 0);
 	AnimalMaxNumMap.Add(PigClass, 10);
 	AnimalMaxNumMap.Add(FoxClass, 1);
 
@@ -93,6 +93,8 @@ void ARWGameMode::BeginPlay()
 
 	// First Day Setting
 	DayChangeSpawnAnimals();
+	// Set GameState
+	GameState = GetWorld()->GetGameState<ARWGameState>();
 }
 
 void ARWGameMode::Tick(float DeltaSeconds)
@@ -116,6 +118,8 @@ void ARWGameMode::UpdateTime(float DeltaSeconds)
 	DayProgressPercent = 100 * (CurrentTime / ONE_DAY);
 	CurrentHour = CurrentTime / ONE_HOUR;
 	CurrentMinute = ((60/ONE_HOUR) * static_cast<int32>(CurrentTime)) % 60;
+	// 각 클라이언트로 뿌려주기 위함
+	GameState->SetCurrentTime(CurrentTime);
 }
 
 float ARWGameMode::GetCurrentTime() const
@@ -138,6 +142,7 @@ void ARWGameMode::DayChange()
 	DayScore++;
 	// 24시간 초과 시 00부터 시작하도록
 	CurrentTime -= ONE_DAY;
+	GameState->SetDayScore(DayScore);
 	// Spawn Animal
 	UpdateMaxWolfNum();
 	DayChangeSpawnAnimals();
