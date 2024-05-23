@@ -9,9 +9,13 @@
 #include "Animation/AnimMontage.h"
 #include "Components/BoxComponent.h"
 #include "Engine/DamageEvents.h"
+#include "Net/UnrealNetwork.h"
 #include "Object/RWInteractableActor.h"
 #include "Stat/RWCharacterStatComponent.h"
+#include "NiagaraComponent.h"
 #include "UI/RWMainWidget.h"
+
+constexpr float OUTDOOR_FIRE_DAMAGE = 3.0f;
 
 // Sets default values
 ARWCharacterBase::ARWCharacterBase()
@@ -19,6 +23,8 @@ ARWCharacterBase::ARWCharacterBase()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	bReplicates = true;
+	
 	// Pawn의 Rotation?
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationPitch = false;
@@ -61,6 +67,7 @@ ARWCharacterBase::ARWCharacterBase()
 	CollisionBox->InitBoxExtent(FVector(50.f, 50.f,50.f));
 	CollisionBox->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	CollisionBox->SetCollisionResponseToAllChannels(ECR_Overlap);
+	// Set Overlap Delegate
 	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ARWCharacterBase::OnOverlapBegin);
 	CollisionBox->OnComponentEndOverlap.AddDynamic(this, &ARWCharacterBase::OnOverlapEnd);
 	CollisionBox->SetupAttachment(RootComponent);
@@ -73,16 +80,37 @@ ARWCharacterBase::ARWCharacterBase()
 
 	// Stat Component
 	StatComponent = CreateDefaultSubobject<URWCharacterStatComponent>(TEXT("Stat"));
+	StatComponent->SetIsReplicated(true);
+
 }
 
 void ARWCharacterBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
+	// Components가 초기화 된 이후 Niagara 컴포넌트를 받아옴
+	FName FireNiagaraTag(TEXT("FireNiagara"));
+	UActorComponent* FireNiagaraActorComponent = FindComponentByTag(UNiagaraComponent::StaticClass(), FireNiagaraTag);
+	if(FireNiagaraActorComponent)
+	{
+		NiagaraEffectFire = Cast<UNiagaraComponent>(FireNiagaraActorComponent);
+	}
+	
+	if(NiagaraEffectFire)
+	{
+		NiagaraEffectFire->SetVisibility(false);
+	}
+	
 	// HP가 0이 될 경우 사망 -> Delegate로 Stat Component와 연결 
 	StatComponent->OnHPZero.AddUObject(this, &ARWCharacterBase::SetDead);
 	// Hungry가 Max가 되면 Staring으로 변경 -> -> Delegate로 Stat Component와 연결
 	StatComponent->OnStarving.AddUObject(this, &ARWCharacterBase::SetStarving);
+}
+
+void ARWCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ARWCharacterBase, bIsInShelter);
 }
 
 void ARWCharacterBase::SetUpCharacterWidget(URWMainWidget* MainWidget)
@@ -116,7 +144,6 @@ void ARWCharacterBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 	{
 		CollisionedItem = OtherInteractableActor;
 		bIsItemInBound = true;
-		UE_LOG(LogTemp, Log, TEXT("Item In"));
 	}
 	else
 	{ // Item이 아니라면 Pawn인지 확인
@@ -129,7 +156,6 @@ void ARWCharacterBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 			{
 				bIsAnimalInBound = true;
 			}
-			UE_LOG(LogTemp, Log, TEXT("Pawn In"));
 		}
 	}
 }
@@ -143,7 +169,6 @@ void ARWCharacterBase::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor*
 	{
 		CollisionedItem = nullptr;
 		bIsItemInBound = false;
-		UE_LOG(LogTemp, Log, TEXT("Item Out"));
 	}
 	else
 	{
@@ -155,7 +180,6 @@ void ARWCharacterBase::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor*
 				bIsAnimalInBound = false;
 			}	
 			CollisionedPawn = nullptr;
-		UE_LOG(LogTemp, Log, TEXT("Pawn Out"));
 		}
 	}
 }
@@ -232,3 +256,45 @@ void ARWCharacterBase::SetStarving()
 {
 	// 기아 상태 시 변화 구현 필요
 }
+
+void ARWCharacterBase::SetupShelterEntry()
+{
+	bIsInShelter = true;
+
+	NiagaraEffectFire->SetVisibility(false);
+}
+
+void ARWCharacterBase::SetupShelterExit()
+{
+	bIsInShelter = false;
+	
+	NiagaraEffectFire->SetVisibility(true);
+
+	ApplyFireDamageOverTime();
+}
+
+void ARWCharacterBase::ApplyFireDamageOverTime()
+{
+	// Shelter안으로 들어간 경우 동작하지 않음 <- Timer로 다시 호출되는 경우에 핵심
+	if(bIsInShelter)
+	{
+		return;	
+	}
+
+	// 여기에 밤 되는거 추가
+	if(HasAuthority())
+	{
+		StatComponent->ApplyDamage(OUTDOOR_FIRE_DAMAGE);
+	}
+	
+	FTimerHandle FireDamageOverTimeTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		FireDamageOverTimeTimerHandle,
+		this,
+		&ARWCharacterBase::ApplyFireDamageOverTime,
+		1.f,
+		false
+	);
+}
+
+

@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Character/RWCharacterBase.h"
-#include "AbilitySystemInterface.h"
 #include "RWCharacterPlayer.generated.h"
 
 /**

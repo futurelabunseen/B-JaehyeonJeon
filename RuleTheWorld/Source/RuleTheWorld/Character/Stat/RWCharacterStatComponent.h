@@ -25,11 +25,14 @@ class RULETHEWORLD_API URWCharacterStatComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	URWCharacterStatComponent();
-
+	
+	TObjectPtr<class AActor> OwnerActor;
+	
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 public:
 	// HP Delegate
 	FOnHPZeroDelegate OnHPZero;
@@ -57,14 +60,19 @@ protected:
 	UPROPERTY(VisibleInstanceOnly, Category = "Stat")
 	float MaxHP;
 	// Transient 키워드로 디스크에 저장되지 않도록 구현할 수 있음
-	UPROPERTY(Transient, VisibleInstanceOnly, Category = "Stat")
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_CurrentHP, VisibleInstanceOnly, Category = "Stat")
 	float CurrentHP;
 	
 	UPROPERTY(VisibleInstanceOnly, Category = "Stat")
 	float MaxHunger;
-	UPROPERTY(Transient, VisibleInstanceOnly, Category = "Stat")
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_CurrentHunger, VisibleInstanceOnly, Category = "Stat")
 	float CurrentHunger;
 
-
+	UFUNCTION()
+	void OnRep_CurrentHP();
+	
+	UFUNCTION()
+	void OnRep_CurrentHunger();
+	
 	void IncreaseHungerOverTime();
 };

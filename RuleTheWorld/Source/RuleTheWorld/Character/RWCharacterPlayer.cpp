@@ -36,7 +36,7 @@ ARWCharacterPlayer::ARWCharacterPlayer()
 	// Minimap SpringArm
 	MiniMapSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("MiniMapSpringArm"));
 	MiniMapSpringArm->SetupAttachment(RootComponent);
-	MiniMapSpringArm->TargetArmLength = 10000.0f;
+	MiniMapSpringArm->TargetArmLength = 100000.0f;
 	MiniMapSpringArm->bUsePawnControlRotation = false;
 	MiniMapSpringArm->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
 

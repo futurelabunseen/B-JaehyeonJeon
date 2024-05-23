@@ -6,10 +6,11 @@
 #include "GameFramework/Character.h"
 #include "Interface/RWAnimationAttackInterface.h"
 #include "Interface/RWCharacterWidgetInterface.h"
+#include "Interface/RWShelterCollisionInterface.h"
 #include "RWCharacterBase.generated.h"
 
 UCLASS()
-class RULETHEWORLD_API ARWCharacterBase : public ACharacter, public IRWAnimationAttackInterface, public IRWCharacterWidgetInterface
+class RULETHEWORLD_API ARWCharacterBase : public ACharacter, public IRWAnimationAttackInterface, public IRWCharacterWidgetInterface, public IRWShelterCollisionInterface
 {
 	GENERATED_BODY()
 
@@ -18,6 +19,8 @@ public:
 	ARWCharacterBase();
 
 	virtual void PostInitializeComponents() override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 // Bounding Box
 protected:
@@ -69,4 +72,19 @@ protected:
 
 	// interface 구현
 	virtual void SetUpCharacterWidget(class URWMainWidget* MainWidget) override;
+
+// Shelter Section
+protected:
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = Shelter, Meta = (AllowPrivateAccess = "true"))
+	uint8 bIsInShelter:1;
+	// Interface
+	//UFUNCTION()
+	virtual void SetupShelterEntry() override;
+	virtual void SetupShelterExit() override;
+
+	void ApplyFireDamageOverTime();
+public:
+	// Niagara Effect
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shelter)
+	TObjectPtr<class UNiagaraComponent> NiagaraEffectFire;
 };

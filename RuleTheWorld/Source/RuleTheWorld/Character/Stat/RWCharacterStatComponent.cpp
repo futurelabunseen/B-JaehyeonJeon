@@ -3,6 +3,10 @@
 
 #include "Character/Stat/RWCharacterStatComponent.h"
 
+#include "Net/UnrealNetwork.h"
+
+constexpr float HUNGER_INCREASE_RATE = 1.f;  
+
 // Sets default values for this component's properties
 URWCharacterStatComponent::URWCharacterStatComponent()
 {
@@ -11,6 +15,7 @@ URWCharacterStatComponent::URWCharacterStatComponent()
 
 	MaxHunger = 200.f;
 	CurrentHunger = 0.f;
+
 }
 
 
@@ -21,6 +26,20 @@ void URWCharacterStatComponent::BeginPlay()
 
 	SetHP(MaxHP);
 	SetHunger(0.f);
+
+	OwnerActor = GetOwner();
+	if(OwnerActor->HasAuthority())
+	{
+		IncreaseHungerOverTime();	
+	}
+}
+
+void URWCharacterStatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(URWCharacterStatComponent, CurrentHP);
+	DOREPLIFETIME(URWCharacterStatComponent, CurrentHunger);
 }
 
 float URWCharacterStatComponent::ApplyDamage(float InDamage)
@@ -39,7 +58,27 @@ void URWCharacterStatComponent::SetHP(float NewHP)
 {
 	CurrentHP = FMath::Clamp<float>(NewHP, 0.0f, MaxHP);
 
-	// HP가 바뀌었으니 처리하라고 MultiCast를 날려줌
+	// 리슨서버의 경우 Replication되지 않아 서버일 경우 명시적으로 실행
+	if(GetOwner()->HasAuthority())
+	{
+		OnRep_CurrentHP();
+	}
+}
+
+void URWCharacterStatComponent::SetHunger(float NewHunger)
+{
+	CurrentHunger = FMath::Clamp<float>(NewHunger, 0.0f, MaxHunger);
+	
+	// 리슨서버의 경우 Replication되지 않아 서버일 경우 명시적으로 실행
+	if(GetOwner()->HasAuthority())
+	{
+		OnRep_CurrentHunger();
+	}
+}
+
+void URWCharacterStatComponent::OnRep_CurrentHP()
+{
+	// HP가 바뀌었으니 처리하라고 Delegate를 날려줌
 	OnHPChanged.Broadcast(CurrentHP);
 
 	if(CurrentHP <= KINDA_SMALL_NUMBER) // 아주 작은 값?
@@ -47,13 +86,12 @@ void URWCharacterStatComponent::SetHP(float NewHP)
 		// 사망 처리
 		OnHPZero.Broadcast();
 	}
+	UE_LOG(LogTemp, Log, TEXT("HP Replicated"));	
 }
 
-void URWCharacterStatComponent::SetHunger(float NewHunger)
+void URWCharacterStatComponent::OnRep_CurrentHunger()
 {
-	CurrentHunger = FMath::Clamp<float>(NewHunger, 0.0f, MaxHunger);
-
-	// Hunger가 바뀌었으니 처리하라고 MultiCast를 날려줌
+	// Hunger가 바뀌었으니 처리하라고 Delegate를 날려줌
 	OnHungerChanged.Broadcast(CurrentHunger);
 
 	if(CurrentHunger >= MaxHunger) 
@@ -61,6 +99,20 @@ void URWCharacterStatComponent::SetHunger(float NewHunger)
 		// 기아 상태가 되었다고 알림
 		OnStarving.Broadcast();
 	}
+}
+
+void URWCharacterStatComponent::IncreaseHungerOverTime()
+{
+	SetHunger(CurrentHunger + HUNGER_INCREASE_RATE);
+
+	FTimerHandle IncreaseHungerTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		IncreaseHungerTimerHandle,
+		this,
+		&URWCharacterStatComponent::IncreaseHungerOverTime,
+		1.f,
+		false
+	);
 }
 
 
