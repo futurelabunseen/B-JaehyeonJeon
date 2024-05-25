@@ -70,9 +70,6 @@ protected:
 	TObjectPtr<class UInputAction> SneakingAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category =  Input, Meta = (AllowPrivateAccess = "True"))
-	TObjectPtr<class UInputAction> PickUpAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category =  Input, Meta = (AllowPrivateAccess = "True"))
 	TObjectPtr<class UInputAction> FocusingAction;
 	
 	void Move(const FInputActionValue& Value);
@@ -100,7 +97,7 @@ protected:
 	uint8 bIsSneaking:1;
 
 
-	AActor* FocusingTargetActor = nullptr;
+	TObjectPtr<AActor> FocusingTargetActor = nullptr;
 	
 	FTimerHandle JumpTimerHandle;
 
@@ -111,5 +108,5 @@ public:
 // Inventory
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inventory)
-	TObjectPtr<class ARWPlayerInventory> Inventory;
+	TObjectPtr<class URWInventoryComponent> InventoryComponent;
 };

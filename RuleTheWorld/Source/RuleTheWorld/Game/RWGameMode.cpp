@@ -11,7 +11,7 @@
 #include "GameFramework/PlayerState.h"
 #include "Player/RWPlayerController.h"
 
-constexpr float START_TIME = 120.f; // Game Start 06:00 
+constexpr float START_TIME = 0.f; // Game Start 06:00 
 constexpr float ONE_DAY = 480.f; // 8min(Real Time) = 1Day / 1min = 3Hours / 20sec = 1Hour
 constexpr int ONE_HOUR = 20;
 
@@ -78,7 +78,7 @@ ARWGameMode::ARWGameMode()
 
 	// Animal
 	// Set Initial Value
-	AnimalMaxNumMap.Add(WolfClass, 0);
+	AnimalMaxNumMap.Add(WolfClass, 3);
 	AnimalMaxNumMap.Add(PigClass, 10);
 	AnimalMaxNumMap.Add(FoxClass, 1);
 

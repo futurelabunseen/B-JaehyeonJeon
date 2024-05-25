@@ -24,6 +24,7 @@ ARWCharacterBase::ARWCharacterBase()
 	PrimaryActorTick.bCanEverTick = true;
 
 	bReplicates = true;
+	CharacterState = ECharacterState::Live;
 	
 	// Pawn의 Rotation?
 	bUseControllerRotationRoll = false;
@@ -142,6 +143,7 @@ void ARWCharacterBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 	ARWInteractableActor* OtherInteractableActor = Cast<ARWInteractableActor>(OtherActor);
 	if(OtherInteractableActor)
 	{
+		// Inventory 구현부
 		CollisionedItem = OtherInteractableActor;
 		bIsItemInBound = true;
 	}
@@ -186,6 +188,7 @@ void ARWCharacterBase::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor*
 
 void ARWCharacterBase::AttackHitCheck()
 {
+	
 	FHitResult OutHitResult;
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(Attack), true, this);
 
@@ -240,6 +243,14 @@ void ARWCharacterBase::MulticastRPCSetDead_Implementation()
 	PlayDeadAnimation();
 	// 사망 시 이동 제한
 	GetCharacterMovement()->SetMovementMode(MOVE_None);
+
+	// 사망 시 State 교체 및 불 이펙트 종료
+	CharacterState = ECharacterState::Dead;
+	NiagaraEffectFire->Deactivate();
+	if(NiagaraEffectFire->IsVisible())
+	{
+		NiagaraEffectFire->SetVisibility(false);	
+	}
 	
 	// 더 이상 충돌되지 않도록
 	SetActorEnableCollision(false);
@@ -275,8 +286,8 @@ void ARWCharacterBase::SetupShelterExit()
 
 void ARWCharacterBase::ApplyFireDamageOverTime()
 {
-	// Shelter안으로 들어간 경우 동작하지 않음 <- Timer로 다시 호출되는 경우에 핵심
-	if(bIsInShelter)
+	// 죽었거나 Shelter안으로 들어간 경우 동작하지 않음 <- Timer로 다시 호출되는 경우에 핵심
+	if(bIsInShelter || CharacterState == ECharacterState::Dead)
 	{
 		return;	
 	}

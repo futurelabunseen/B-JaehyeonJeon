@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "RWEnums.h"
 #include "RWPlayerInventory.generated.h"
 
 UCLASS()
@@ -14,8 +15,9 @@ class RULETHEWORLD_API ARWPlayerInventory : public AActor
 public:	
 	ARWPlayerInventory();
 
+	// Inventory는 <무슨 아이템, 몇 개>의 형태로 저장됨
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Inventory")
-	TArray<TObjectPtr<class ARWInteractableActor>> Inventory;
+	TMap<TEnumAsByte<EItemData>, int32> Inventory;
 
 	UFUNCTION()
 	void GetItem(class ARWInteractableActor* Item);

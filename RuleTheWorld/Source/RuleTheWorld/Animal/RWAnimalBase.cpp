@@ -62,6 +62,12 @@ void ARWAnimalBase::UpdateWalkSpeed(float WalkSpeed)
 
 void ARWAnimalBase::AttackHitCheck()
 {
+	if(!HasAuthority())
+	{
+		UE_LOG(LogTemp, Log, TEXT("It's not has Authority"));
+		return;
+	}
+	
 	FHitResult OutHitResult;
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(Attack), true, this);
 

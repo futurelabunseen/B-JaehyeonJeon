@@ -13,4 +13,7 @@ ARWInteractableActor::ARWInteractableActor()
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	MeshComponent->SetupAttachment(RootComponent);
+	
+	bReplicates = true;
+	SetReplicates(true);
 }

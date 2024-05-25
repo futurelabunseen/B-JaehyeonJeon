@@ -7,10 +7,13 @@
 #include "Interface/RWAnimationAttackInterface.h"
 #include "Interface/RWCharacterWidgetInterface.h"
 #include "Interface/RWShelterCollisionInterface.h"
+#include "RWEnums.h" // Enum Type 모음
+#include "Interface/RWInventoryInterface.h"
 #include "RWCharacterBase.generated.h"
 
+
 UCLASS()
-class RULETHEWORLD_API ARWCharacterBase : public ACharacter, public IRWAnimationAttackInterface, public IRWCharacterWidgetInterface, public IRWShelterCollisionInterface
+class RULETHEWORLD_API ARWCharacterBase : public ACharacter, public IRWAnimationAttackInterface, public IRWCharacterWidgetInterface, public IRWShelterCollisionInterface, public IRWInventoryInterface
 {
 	GENERATED_BODY()
 
@@ -19,9 +22,9 @@ public:
 	ARWCharacterBase();
 
 	virtual void PostInitializeComponents() override;
-
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	ECharacterState CharacterState;
 // Bounding Box
 protected:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
@@ -31,14 +34,12 @@ protected:
 	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION()
 	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-public:
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
-	TObjectPtr<class ARWInteractableActor> CollisionedItem;
 	
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
-	uint8 bIsItemInBound:1;
-
+	//UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
+	//TObjectPtr<class ARWInteractableActor> CollisionedItem;
+	//UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
+	//uint8 bIsItemInBound:1;
+	//  => 인터페이스로 이동
 public:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
 	TObjectPtr<class APawn> CollisionedPawn;

@@ -5,21 +5,19 @@
 
 #include "Object/RWInteractableActor.h"
 
-	constexpr int InventorySize = 10;
+
 // Sets default values
 ARWPlayerInventory::ARWPlayerInventory()
 {
-	// Inventory Initial
-	Inventory.Init(nullptr, InventorySize);
 }
 
 void ARWPlayerInventory::GetItem(ARWInteractableActor* Item)
-{
+{/*
 	// 처음부터 Inventory를 돌며 빈 곳을 확인
 	bool bIsFull = true;
 	for(auto& Iter : Inventory)
 	{
-		if(Iter == nullptr)
+		if(Iter.Key == EItemData::None)
 		{
 			Iter = Item;
 			Item->Destroy();
@@ -31,7 +29,7 @@ void ARWPlayerInventory::GetItem(ARWInteractableActor* Item)
 	if(bIsFull)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Inventory : Inventory is full!"))
-	}
+	}*/
 }
 
 void ARWPlayerInventory::UseItem()

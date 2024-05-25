@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "RWEnums.h"
 #include "RWInteractableActor.generated.h"
+
 
 UCLASS()
 class RULETHEWORLD_API ARWInteractableActor : public AActor
@@ -14,12 +16,13 @@ class RULETHEWORLD_API ARWInteractableActor : public AActor
 public:	
 	ARWInteractableActor();
 
-
+	// Inventory 구성을 위한 ItemData
+	EItemData ItemData = EItemData::None;
+	
 // DefaultComponent
 protected:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Mesh")
 	TObjectPtr<class UStaticMeshComponent> MeshComponent;
-	
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Mesh")
 	TObjectPtr<class UCapsuleComponent> CapsuleComponent;

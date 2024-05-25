@@ -5,10 +5,10 @@
 #include "EnhancedInputComponent.h"
 #include "InputMappingContext.h"
 #include "EnhancedInputSubsystems.h"
-#include "RWPlayerInventory.h"
 #include "Blueprint/UserWidget.h"
 
 #include "Character/RWCharacterPlayer.h"
+#include "Character/Inventory/RWInventoryComponent.h"
 #include "Object/RWInteractableActor.h"
 
 
@@ -64,11 +64,7 @@ ARWPlayerController::ARWPlayerController()
 		SneakingAction = InputActionSneakingRef.Object;
 	}
 	
-	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionPickUpRef(TEXT("/Script/EnhancedInput.InputAction'/Game/RuleTheWorld/Input/Action/IA_PickUp.IA_PickUp'"));
-	if(nullptr != InputActionPickUpRef.Object)
-	{
-		PickUpAction = InputActionPickUpRef.Object;
-	}
+	
 
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionFocusingRef(TEXT("/Script/EnhancedInput.InputAction'/Game/RuleTheWorld/Input/Action/IA_Focusing.IA_Focusing'"));
 	if(nullptr != InputActionFocusingRef.Object)
@@ -77,7 +73,10 @@ ARWPlayerController::ARWPlayerController()
 	}
 	
 	// Inventory
-	Inventory = CreateDefaultSubobject<ARWPlayerInventory>(TEXT("Inventory"));
+	InventoryComponent = CreateDefaultSubobject<URWInventoryComponent>(TEXT("Inventory"));
+
+	bReplicates = true;
+	SetReplicates(true);
 }
 
 
@@ -125,7 +124,6 @@ void ARWPlayerController::SetupInputComponent()
 	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ARWPlayerController::Attack);
 	EnhancedInputComponent->BindAction(SneakingAction, ETriggerEvent::Triggered, this, &ARWPlayerController::Sneaking);
 	EnhancedInputComponent->BindAction(SneakingAction, ETriggerEvent::Completed, this, &ARWPlayerController::StopSneaking);
-	EnhancedInputComponent->BindAction(PickUpAction, ETriggerEvent::Triggered, this, &ARWPlayerController::PickUp);
 	EnhancedInputComponent->BindAction(FocusingAction, ETriggerEvent::Triggered, this, &ARWPlayerController::Focusing);
 	EnhancedInputComponent->BindAction(FocusingAction, ETriggerEvent::Completed, this, &ARWPlayerController::StopFocusing);
 }
@@ -266,7 +264,7 @@ void ARWPlayerController::PickUp(const FInputActionValue& Value)
 	if(PlayerPawn->bIsItemInBound)
 	{
 		UE_LOG(LogTemp, Log, TEXT("PlayerController : Item Pick Up"));
-		Inventory->GetItem(PlayerPawn->CollisionedItem);
+		//Inventory->GetItem(PlayerPawn->CollisionedItem);
 	}
 }
 
