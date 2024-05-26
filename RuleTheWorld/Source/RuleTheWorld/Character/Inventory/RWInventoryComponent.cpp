@@ -32,15 +32,8 @@ void URWInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	PlayerController = Cast<APlayerController>(GetOwner());
-	if (PlayerController)
-	{
-		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
-		{
-			// Bind PickUp Action
-			EnhancedInputComponent->BindAction(PickUpAction, ETriggerEvent::Triggered, this, &URWInventoryComponent::PickUp);
-		}
-	}
+	BindPickUpAction();
+	InitializeInterface();
 }
 
 
@@ -52,10 +45,9 @@ void URWInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 
 void URWInventoryComponent::PickUp()
 {
-	IRWInventoryInterface* CharacterFromInterface = Cast<IRWInventoryInterface>(PlayerController->GetCharacter());
-	if(CharacterFromInterface->bIsItemInBound)
+	if(CharacterInterface->bIsItemInBound)
 	{
-		EItemData ItemData = CharacterFromInterface->CollisionedItem->ItemData;
+		EItemData ItemData = CharacterInterface->CollisionedItem->ItemData;
 		ServerRPCGetItem(ItemData);
 	}
 }
@@ -63,8 +55,7 @@ void URWInventoryComponent::PickUp()
 bool URWInventoryComponent::ServerRPCGetItem_Validate(EItemData ItemData)
 {
 	// Client에서 PickUP을 요청한 Item과 서버에서 대상으로 하고있는 아이템이 같은지 확인
-	IRWInventoryInterface* CharacterFromInterface = Cast<IRWInventoryInterface>(PlayerController->GetCharacter());
-	if(CharacterFromInterface->CollisionedItem->ItemData != ItemData)
+	if(CharacterInterface->CollisionedItem->ItemData != ItemData)
 	{
 		return false;
 	}
@@ -75,10 +66,9 @@ bool URWInventoryComponent::ServerRPCGetItem_Validate(EItemData ItemData)
 void URWInventoryComponent::ServerRPCGetItem_Implementation(EItemData ItemData)
 {
 	// 해당 아이템 파괴
-	IRWInventoryInterface* CharacterFromInterface = Cast<IRWInventoryInterface>(PlayerController->GetCharacter());
-	if(CharacterFromInterface->bIsItemInBound)
+	if(CharacterInterface->bIsItemInBound)
 	{
-		CharacterFromInterface->CollisionedItem->Destroy();
+		CharacterInterface->CollisionedItem->Destroy();
 	}
 	// 동일 아이템이 있는 위치를 찾고 수 증가
 	int32 ItemIndex = GetItemIndex(ItemData);
@@ -92,6 +82,41 @@ void URWInventoryComponent::UseItem()
 void URWInventoryComponent::DeleteItem()
 {
 }
+
+void URWInventoryComponent::InitializeInterface()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+	IRWInventoryInterface* II = Cast<IRWInventoryInterface>(PlayerController->GetCharacter());
+	
+	CharacterInterface.SetInterface(II);
+	CharacterInterface.SetObject(PlayerController->GetCharacter());
+	
+	FTimerHandle InterfaceInitializeTimerHandle;
+	if(!CharacterInterface) // 설정되지 않았을 경우
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			InterfaceInitializeTimerHandle,
+			this,
+			&URWInventoryComponent::InitializeInterface,
+			0.5f,
+			false 
+		);
+	}
+}
+
+void URWInventoryComponent::BindPickUpAction()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+	if (PlayerController)
+	{
+		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
+		{
+			// Bind PickUp Action
+			EnhancedInputComponent->BindAction(PickUpAction, ETriggerEvent::Triggered, this, &URWInventoryComponent::PickUp);
+		}
+	}
+}
+
 
 int32 URWInventoryComponent::GetItemIndex(EItemData ItemData)
 {

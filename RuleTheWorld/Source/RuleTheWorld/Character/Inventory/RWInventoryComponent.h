@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "RWEnums.h"
+#include "Interface/RWInventoryInterface.h"
 #include "RWInventoryComponent.generated.h"
 
 USTRUCT(BlueprintType)
@@ -31,8 +32,8 @@ public:
 	virtual void BeginPlay() override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-	TObjectPtr<class APlayerController> PlayerController;
+	
+	TScriptInterface<IRWInventoryInterface> CharacterInterface;
 	
 	// Inventory는 <무슨 아이템, 몇 개>의 형태로 저장됨
 	UPROPERTY(BlueprintReadWrite, Replicated, EditAnywhere, Category = "Inventory")
@@ -50,6 +51,11 @@ protected:
 	void UseItem();
 	void DeleteItem();
 
+	void BindPickUpAction();
+	void InitializeInterface();
+	
 	int32 GetItemIndex(EItemData ItemData);
 	void AddInventoryItemNums(int32 ItemIndex);
 };
+
+

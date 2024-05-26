@@ -41,8 +41,6 @@ public:
 	void HUDInstancing();
 	void HUDAddToViewport();
 	
-
-	
 // Input System
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category =  Input, Meta = (AllowPrivateAccess = "True"))
@@ -83,7 +81,6 @@ protected:
 	void Attack(const FInputActionValue& Value);
 	void Sneaking(const FInputActionValue& Value);
 	void StopSneaking(const FInputActionValue& Value);
-	void PickUp(const FInputActionValue& Value);
 	void Focusing(const FInputActionValue& Value);
 	void StopFocusing(const FInputActionValue& Value);
 	
@@ -106,7 +103,6 @@ public:
 	uint8 bIsFocusing:1;
 
 // Inventory
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inventory)
 	TObjectPtr<class URWInventoryComponent> InventoryComponent;
 };

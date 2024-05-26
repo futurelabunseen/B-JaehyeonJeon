@@ -259,15 +259,6 @@ void ARWPlayerController::StopSneaking(const FInputActionValue& Value)
 	bIsSneaking = false;
 }
 
-void ARWPlayerController::PickUp(const FInputActionValue& Value)
-{
-	if(PlayerPawn->bIsItemInBound)
-	{
-		UE_LOG(LogTemp, Log, TEXT("PlayerController : Item Pick Up"));
-		//Inventory->GetItem(PlayerPawn->CollisionedItem);
-	}
-}
-
 void ARWPlayerController::Focusing(const FInputActionValue& Value)
 {
 	
