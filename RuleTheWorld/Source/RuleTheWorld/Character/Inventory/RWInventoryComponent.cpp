@@ -6,8 +6,9 @@
 #include "EnhancedInputComponent.h"
 #include "Character/RWCharacterPlayer.h"
 #include "Net/UnrealNetwork.h"
-#include "Interface/RWInventoryInterface.h"
+#include "..\..\Interface\RWCollisionedItemInterface.h"
 #include "Object/RWInteractableActor.h"
+#include "UI/RWInventoryWidget.h"
 
 
 constexpr int INVENTORY_SIZE = 10;
@@ -15,6 +16,12 @@ constexpr int INVENTORY_SIZE = 10;
 // Sets default values for this component's properties
 URWInventoryComponent::URWInventoryComponent()
 {
+	static ConstructorHelpers::FObjectFinder<UInputAction> InventoryWidgetOnScreenActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/RuleTheWorld/Input/Action/IA_InventoryWidget.IA_InventoryWidget'"));
+	if(nullptr != InventoryWidgetOnScreenActionRef.Object)
+	{
+		InventoryWidgetOnScreenAction = InventoryWidgetOnScreenActionRef.Object;
+	}
+	
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionPickUpRef(TEXT("/Script/EnhancedInput.InputAction'/Game/RuleTheWorld/Input/Action/IA_PickUp.IA_PickUp'"));
 	if(nullptr != InputActionPickUpRef.Object)
 	{
@@ -24,7 +31,6 @@ URWInventoryComponent::URWInventoryComponent()
 	Inventory.InventoryItemSubjects.Init(EItemData::None, INVENTORY_SIZE);
 	Inventory.InventoryItemNums.Init(0, INVENTORY_SIZE);
 
-	//bReplicates = true;
 	SetIsReplicated(true);
 }
 
@@ -32,8 +38,14 @@ void URWInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	BindPickUpAction();
+	BindAction();
 	InitializeInterface();
+	
+	APlayerController* Controller = Cast<APlayerController>(GetOwner());
+	if(Controller->IsLocalController())
+	{
+		InventoryWidgetInstancing();
+	}
 }
 
 
@@ -50,6 +62,8 @@ void URWInventoryComponent::PickUp()
 		EItemData ItemData = CharacterInterface->CollisionedItem->ItemData;
 		ServerRPCGetItem(ItemData);
 	}
+
+
 }
 
 bool URWInventoryComponent::ServerRPCGetItem_Validate(EItemData ItemData)
@@ -57,6 +71,7 @@ bool URWInventoryComponent::ServerRPCGetItem_Validate(EItemData ItemData)
 	// Client에서 PickUP을 요청한 Item과 서버에서 대상으로 하고있는 아이템이 같은지 확인
 	if(CharacterInterface->CollisionedItem->ItemData != ItemData)
 	{
+		
 		return false;
 	}
 	
@@ -72,7 +87,7 @@ void URWInventoryComponent::ServerRPCGetItem_Implementation(EItemData ItemData)
 	}
 	// 동일 아이템이 있는 위치를 찾고 수 증가
 	int32 ItemIndex = GetItemIndex(ItemData);
-	AddInventoryItemNums(ItemIndex);	
+	AddInventoryItemNums(ItemIndex);
 }
 
 void URWInventoryComponent::UseItem()
@@ -86,7 +101,7 @@ void URWInventoryComponent::DeleteItem()
 void URWInventoryComponent::InitializeInterface()
 {
 	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
-	IRWInventoryInterface* II = Cast<IRWInventoryInterface>(PlayerController->GetCharacter());
+	IRWCollisionedItemInterface* II = Cast<IRWCollisionedItemInterface>(PlayerController->GetCharacter());
 	
 	CharacterInterface.SetInterface(II);
 	CharacterInterface.SetObject(PlayerController->GetCharacter());
@@ -104,7 +119,39 @@ void URWInventoryComponent::InitializeInterface()
 	}
 }
 
-void URWInventoryComponent::BindPickUpAction()
+void URWInventoryComponent::SetInventoryWidgetVisibility()
+{
+	UE_LOG(LogTemp, Log, TEXT("하나"));
+	if(InventoryWidgetInstance)
+	{
+		UE_LOG(LogTemp, Log, TEXT("둘"));
+
+		// Inventory Widget이 Viewport에 없으면 넣고, 있으면 뺌
+		if(InventoryWidgetInstance->IsInViewport())
+		{
+			UE_LOG(LogTemp, Log, TEXT("셋"));
+
+			InventoryWidgetInstance->RemoveFromParent();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("넷"));
+
+			InventoryWidgetInstance->AddToViewport();
+			UE_LOG(LogTemp, Log, TEXT("다섯"));
+		}
+	}
+}
+
+void URWInventoryComponent::InventoryWidgetInstancing()
+{
+	if(InventoryWidgetClass != nullptr)
+	{
+		InventoryWidgetInstance = CreateWidget<UUserWidget>(Cast<APlayerController>(GetOwner()), InventoryWidgetClass);
+	}
+}
+
+void URWInventoryComponent::BindAction()
 {
 	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
 	if (PlayerController)
@@ -113,6 +160,7 @@ void URWInventoryComponent::BindPickUpAction()
 		{
 			// Bind PickUp Action
 			EnhancedInputComponent->BindAction(PickUpAction, ETriggerEvent::Triggered, this, &URWInventoryComponent::PickUp);
+			EnhancedInputComponent->BindAction(InventoryWidgetOnScreenAction, ETriggerEvent::Triggered, this, &URWInventoryComponent::SetInventoryWidgetVisibility);
 		}
 	}
 }
@@ -150,4 +198,22 @@ void URWInventoryComponent::AddInventoryItemNums(int32 ItemIndex)
 	
 	Inventory.InventoryItemNums[ItemIndex]++;
 }
+
+FInventory URWInventoryComponent::GetInventoryData()
+{
+	return Inventory;
+}
+
+void URWInventoryComponent::OnRep_CopiedInventoryToWidget()
+{
+	UE_LOG(LogTemp, Log, TEXT("Inventory Rep"));
+	OnRepInventory.Broadcast();
+}
+
+void URWInventoryComponent::SetUpInventoryWidget(URWInventoryWidget* InventoryWidget)
+{
+	// Delegate 등록;
+	OnRepInventory.AddUObject(InventoryWidget, &URWInventoryWidget::InventoryCopy);
+}
+
 

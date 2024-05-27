@@ -4,24 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "RWEnums.h"
-#include "Interface/RWInventoryInterface.h"
+#include "Interface/RWCollisionedItemInterface.h"
+#include "Interface/RWInventoryWidgetInterface.h"
 #include "RWInventoryComponent.generated.h"
 
-USTRUCT(BlueprintType)
-struct FInventory // 두 배열이 같이 리플리케이션 되었으면 해서
-{
-	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly)
-	TArray<TEnumAsByte<EItemData>> InventoryItemSubjects;
-	UPROPERTY(BlueprintReadOnly)
-	// 음수가 되지 않으니 uint8로 선언
-	TArray<uint8> InventoryItemNums;
-};
+
+DECLARE_MULTICAST_DELEGATE(FOnRepInventoryDelegate);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class RULETHEWORLD_API URWInventoryComponent : public UActorComponent
+class RULETHEWORLD_API URWInventoryComponent : public UActorComponent, public IRWInventoryWidgetInterface
 {
 	GENERATED_BODY()
 
@@ -33,14 +25,26 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
-	TScriptInterface<IRWInventoryInterface> CharacterInterface;
-	
-	// Inventory는 <무슨 아이템, 몇 개>의 형태로 저장됨
-	UPROPERTY(BlueprintReadWrite, Replicated, EditAnywhere, Category = "Inventory")
-	FInventory Inventory;
+	TScriptInterface<IRWCollisionedItemInterface> CharacterInterface;
 
+protected:
+// RWInventoryWidgetInterface
+	// Inventory는 <무슨 아이템, 몇 개>의 형태로 저장됨
+	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_CopiedInventoryToWidget, EditAnywhere, Category = "Inventory")
+	FInventory Inventory;
+	
+	virtual FInventory GetInventoryData() override;
+	virtual void SetUpInventoryWidget(URWInventoryWidget* InventoryWidget) override;
+	
+	FOnRepInventoryDelegate OnRepInventory;
+	
+	UFUNCTION()
+	void OnRep_CopiedInventoryToWidget();
 	
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category =  Input, Meta = (AllowPrivateAccess = "True"))
+	TObjectPtr<class UInputAction> InventoryWidgetOnScreenAction;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category =  Input, Meta = (AllowPrivateAccess = "True"))
 	TObjectPtr<class UInputAction> PickUpAction;
 	
@@ -51,11 +55,25 @@ protected:
 	void UseItem();
 	void DeleteItem();
 
-	void BindPickUpAction();
+	void BindAction();
 	void InitializeInterface();
-	
+
 	int32 GetItemIndex(EItemData ItemData);
 	void AddInventoryItemNums(int32 ItemIndex);
+
+	
+// Inventory UI
+	
+	// BP에서 지정
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category =  Inventory, Meta = (AllowPrivateAccess = "True"))
+	TSubclassOf<UUserWidget> InventoryWidgetClass;
+	
+	void InventoryWidgetInstancing();
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category =  Inventory, Meta = (AllowPrivateAccess = "True"))
+	TObjectPtr<UUserWidget> InventoryWidgetInstance;
+	
+	void SetInventoryWidgetVisibility();
+
 };
 
 

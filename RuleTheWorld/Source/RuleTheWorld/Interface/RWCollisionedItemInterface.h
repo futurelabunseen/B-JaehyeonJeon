@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "RWInventoryInterface.generated.h"
+#include "RWCollisionedItemInterface.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class URWInventoryInterface : public UInterface
+class URWCollisionedItemInterface : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -16,7 +16,7 @@ class URWInventoryInterface : public UInterface
 /**
  * 
  */
-class RULETHEWORLD_API IRWInventoryInterface
+class RULETHEWORLD_API IRWCollisionedItemInterface
 {
 	GENERATED_BODY()
 public:

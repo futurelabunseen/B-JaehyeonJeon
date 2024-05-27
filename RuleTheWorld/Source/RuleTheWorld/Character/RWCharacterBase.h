@@ -8,12 +8,12 @@
 #include "Interface/RWCharacterWidgetInterface.h"
 #include "Interface/RWShelterCollisionInterface.h"
 #include "RWEnums.h" // Enum Type 모음
-#include "Interface/RWInventoryInterface.h"
+#include "..\Interface\RWCollisionedItemInterface.h"
 #include "RWCharacterBase.generated.h"
 
 
 UCLASS()
-class RULETHEWORLD_API ARWCharacterBase : public ACharacter, public IRWAnimationAttackInterface, public IRWCharacterWidgetInterface, public IRWShelterCollisionInterface, public IRWInventoryInterface
+class RULETHEWORLD_API ARWCharacterBase : public ACharacter, public IRWAnimationAttackInterface, public IRWCharacterWidgetInterface, public IRWShelterCollisionInterface, public IRWCollisionedItemInterface
 {
 	GENERATED_BODY()
 

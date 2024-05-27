@@ -86,7 +86,9 @@ void URWCharacterStatComponent::OnRep_CurrentHP()
 		// 사망 처리
 		OnHPZero.Broadcast();
 	}
-	UE_LOG(LogTemp, Log, TEXT("HP Replicated"));	
+
+
+	UE_LOG(LogTemp, Log, TEXT("HP Replicated"));		
 }
 
 void URWCharacterStatComponent::OnRep_CurrentHunger()
