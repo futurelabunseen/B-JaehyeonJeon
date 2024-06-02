@@ -105,4 +105,5 @@ public:
 // Inventory
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inventory)
 	TObjectPtr<class URWInventoryComponent> InventoryComponent;
+
 };

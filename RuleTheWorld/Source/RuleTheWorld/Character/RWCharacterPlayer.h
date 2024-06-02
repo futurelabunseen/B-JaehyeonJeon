@@ -4,13 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "Character/RWCharacterBase.h"
+#include "Components/TimelineComponent.h"
+#include "Interface/RWRifleActionInterface.h"
 #include "RWCharacterPlayer.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class RULETHEWORLD_API ARWCharacterPlayer : public ARWCharacterBase
+class RULETHEWORLD_API ARWCharacterPlayer : public ARWCharacterBase, public IRWRifleActionInterface
 {
 	GENERATED_BODY()
 
@@ -53,7 +55,7 @@ public:
 		
 // Combo Attack Section
 //protected:
-	TObjectPtr<class UAnimInstance> AnimInstance;
+	TObjectPtr<class URWAnimInstance> AnimInstance;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Replicated, Category = Animation)
 	int32 CurrentCombo = 0;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Replicated, Category = Animation)
@@ -90,5 +92,58 @@ public:
 	void ComboActionProcessing();
 	void PostComboAttack();
 	FTimerHandle AttackTimerHandle;
+
+
+// Rifle Section
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Rifle, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class URWRifleComponent> RifleComponent;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Rifle, Meta = (AllowPrivateAccess = "True"))
+	TObjectPtr<class USkeletalMeshComponent> RifleMesh;
+
+	virtual void AttachRifleToSocket(const FName& SocketName) override;
+	virtual FVector GetFireStartLocation() override;
+
+
+// Rifle 카메라 이동
+public:
+	// Timeline 컴포넌트
+	UPROPERTY()
+	TObjectPtr<class UTimelineComponent> CameraTimeline;
+
+	// Timeline Curve
+	UPROPERTY(EditAnywhere, Category = Camera)
+	TObjectPtr<class UCurveFloat>  CameraCurve; // Assigned At BP
+
+	void SetCameraTimeLine();
+
+
+
+	// Rifle action Interface
+
+	// TimeLine으로 호출할 함수
+	UFUNCTION()
+	virtual void HandleTimelineProgress(float Value) override;
+
+	virtual void StartAiming() override;
+	virtual void StopAiming() override;
 	
+	virtual void SetReadyForShoot() override;
+	virtual void AbortReadyForShoot() override;
+
+	// Shooting Ready
+	UPROPERTY(ReplicatedUsing = OnRep_SetAnimReadyForShoot)
+	uint8 bIsReadyForShoot:1 = false;
+
+	UFUNCTION()
+	void OnRep_SetAnimReadyForShoot();
+	
+	virtual uint8 GetIsReadyForShoot() override;
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCSetAnimRifleSet(uint8 _bIsReadyForShoot);
+	
+private:
+	FVector DefaultCameraLocation;
+	FVector AimingCameraLocation;
+	FOnTimelineFloat ProgressFunction;
 };

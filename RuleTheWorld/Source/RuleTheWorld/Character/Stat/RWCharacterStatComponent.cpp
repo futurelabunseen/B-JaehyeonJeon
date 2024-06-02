@@ -5,7 +5,9 @@
 
 #include "Net/UnrealNetwork.h"
 
-constexpr float HUNGER_INCREASE_RATE = 1.f;  
+constexpr float HUNGER_INCREASE_RATE = 1.f;
+
+constexpr float STARVING_DAMAGE = 1.f;
 
 // Sets default values for this component's properties
 URWCharacterStatComponent::URWCharacterStatComponent()
@@ -74,6 +76,12 @@ void URWCharacterStatComponent::SetHunger(float NewHunger)
 	{
 		OnRep_CurrentHunger();
 	}
+
+	// 배고픔 수치가 최대로 도달했을 때
+	if(CurrentHunger >= MaxHunger)
+	{
+		ApplyStarvingDamage();
+	}
 }
 
 void URWCharacterStatComponent::OnRep_CurrentHP()
@@ -112,6 +120,29 @@ void URWCharacterStatComponent::IncreaseHungerOverTime()
 		IncreaseHungerTimerHandle,
 		this,
 		&URWCharacterStatComponent::IncreaseHungerOverTime,
+		1.f,
+		false
+	);
+}
+
+void URWCharacterStatComponent::ApplyStarvingDamage()
+{
+	if(CurrentHunger < MaxHunger || CurrentHP <= 0)
+	{
+		return;	
+	}
+
+	// 서버에서 데미지 처리 수행
+	if(GetOwner()->HasAuthority())
+	{
+		ApplyDamage(STARVING_DAMAGE);
+	}
+	
+	FTimerHandle StarvingDamageTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		StarvingDamageTimerHandle,
+		this,
+		&URWCharacterStatComponent::ApplyStarvingDamage,
 		1.f,
 		false
 	);

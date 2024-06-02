@@ -6,7 +6,7 @@
 #include "EnhancedInputComponent.h"
 #include "Character/RWCharacterPlayer.h"
 #include "Net/UnrealNetwork.h"
-#include "..\..\Interface\RWCollisionedItemInterface.h"
+#include "Interface/RWCollisionedItemInterface.h"
 #include "Object/RWInteractableActor.h"
 #include "UI/RWInventoryWidget.h"
 
@@ -31,6 +31,9 @@ URWInventoryComponent::URWInventoryComponent()
 	Inventory.InventoryItemSubjects.Init(EItemData::None, INVENTORY_SIZE);
 	Inventory.InventoryItemNums.Init(0, INVENTORY_SIZE);
 
+	// ItemData Map
+	SetItemDataAssetMap();
+	
 	SetIsReplicated(true);
 }
 
@@ -45,6 +48,11 @@ void URWInventoryComponent::BeginPlay()
 	if(Controller->IsLocalController())
 	{
 		InventoryWidgetInstancing();
+		if(InventoryWidgetInstance)
+		{
+			InventoryWidgetInstance->AddToViewport();
+			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+		}
 	}
 }
 
@@ -57,19 +65,19 @@ void URWInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 
 void URWInventoryComponent::PickUp()
 {
-	if(CharacterInterface->bIsItemInBound)
+	if(CharacterInterface->GetIsItemInBound())
 	{
-		EItemData ItemData = CharacterInterface->CollisionedItem->ItemData;
+		ARWInteractableActor* CollisionedItem = CharacterInterface->GetCollisionedItem();
+		EItemData ItemData = CollisionedItem->ItemData;
 		ServerRPCGetItem(ItemData);
 	}
-
-
 }
 
 bool URWInventoryComponent::ServerRPCGetItem_Validate(EItemData ItemData)
 {
 	// Client에서 PickUP을 요청한 Item과 서버에서 대상으로 하고있는 아이템이 같은지 확인
-	if(CharacterInterface->CollisionedItem->ItemData != ItemData)
+	ARWInteractableActor* CollisionedItem = CharacterInterface->GetCollisionedItem();
+	if(CollisionedItem->ItemData != ItemData)
 	{
 		
 		return false;
@@ -81,12 +89,21 @@ bool URWInventoryComponent::ServerRPCGetItem_Validate(EItemData ItemData)
 void URWInventoryComponent::ServerRPCGetItem_Implementation(EItemData ItemData)
 {
 	// 해당 아이템 파괴
-	if(CharacterInterface->bIsItemInBound)
+	if(CharacterInterface->GetIsItemInBound())
 	{
-		CharacterInterface->CollisionedItem->Destroy();
+		
+		ARWInteractableActor* CollisionedItem = CharacterInterface->GetCollisionedItem();
+		CollisionedItem->Destroy();
 	}
 	// 동일 아이템이 있는 위치를 찾고 수 증가
 	int32 ItemIndex = GetItemIndex(ItemData);
+
+	// None인 자리에 새로 아이템을 넣는 경우에 새로 입력받은 Item Data를 넣어줌
+	if(Inventory.InventoryItemSubjects[ItemIndex] == EItemData::None)
+	{
+		Inventory.InventoryItemSubjects[ItemIndex] = ItemData;
+	}
+	//해당 Index의 값 증가 
 	AddInventoryItemNums(ItemIndex);
 }
 
@@ -100,6 +117,7 @@ void URWInventoryComponent::DeleteItem()
 
 void URWInventoryComponent::InitializeInterface()
 {
+	// Interface 설정
 	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
 	IRWCollisionedItemInterface* II = Cast<IRWCollisionedItemInterface>(PlayerController->GetCharacter());
 	
@@ -121,24 +139,18 @@ void URWInventoryComponent::InitializeInterface()
 
 void URWInventoryComponent::SetInventoryWidgetVisibility()
 {
-	UE_LOG(LogTemp, Log, TEXT("하나"));
 	if(InventoryWidgetInstance)
 	{
-		UE_LOG(LogTemp, Log, TEXT("둘"));
-
-		// Inventory Widget이 Viewport에 없으면 넣고, 있으면 뺌
-		if(InventoryWidgetInstance->IsInViewport())
+		// Inventory Widget의 시각화 여부 조절
+		if(InventoryWidgetInstance->IsVisible())
 		{
-			UE_LOG(LogTemp, Log, TEXT("셋"));
-
-			InventoryWidgetInstance->RemoveFromParent();
+			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 		}
 		else
 		{
-			UE_LOG(LogTemp, Log, TEXT("넷"));
-
-			InventoryWidgetInstance->AddToViewport();
-			UE_LOG(LogTemp, Log, TEXT("다섯"));
+			OnRepInventory.Broadcast(); // Inventory를 열 떄, Delegate로 Widget이 inventory 정보를 최신화 하도록 함
+			
+			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
 		}
 	}
 }
@@ -197,6 +209,33 @@ void URWInventoryComponent::AddInventoryItemNums(int32 ItemIndex)
 	}
 	
 	Inventory.InventoryItemNums[ItemIndex]++;
+}
+
+TMap<EItemData, TObjectPtr<URWItemData>> URWInventoryComponent::GetItemDataAssetMap()
+{
+	return ItemDataAssetMap;
+}
+
+void URWInventoryComponent::SetItemDataAssetMap()
+{
+	// 데이터 에셋 로드 및 매핑
+	static ConstructorHelpers::FObjectFinder<URWItemData> DataAssetNone(TEXT("/Game/RuleTheWorld/Object/BP_ItemData_None.BP_ItemData_None"));
+	if (DataAssetNone.Succeeded())
+	{
+		ItemDataAssetMap.Add(EItemData::None, DataAssetNone.Object);
+	}
+
+	static ConstructorHelpers::FObjectFinder<URWItemData> DataAssetMeat(TEXT("/Game/RuleTheWorld/Object/BP_ItemData_Meat.BP_ItemData_Meat"));
+	if (DataAssetMeat.Succeeded())
+	{
+		ItemDataAssetMap.Add(EItemData::Meat, DataAssetMeat.Object);
+	}
+
+	static ConstructorHelpers::FObjectFinder<URWItemData> DataAssetPlant(TEXT("/Game/RuleTheWorld/Object/BP_ItemData_Plant.BP_ItemData_Plant"));
+	if (DataAssetPlant.Succeeded())
+	{
+		ItemDataAssetMap.Add(EItemData::Plant, DataAssetPlant.Object);
+	}
 }
 
 FInventory URWInventoryComponent::GetInventoryData()

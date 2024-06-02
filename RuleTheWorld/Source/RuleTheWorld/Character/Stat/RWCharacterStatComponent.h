@@ -75,4 +75,6 @@ protected:
 	void OnRep_CurrentHunger();
 	
 	void IncreaseHungerOverTime();
+
+	void ApplyStarvingDamage();
 };

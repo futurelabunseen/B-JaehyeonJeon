@@ -182,7 +182,7 @@ void ARWPlayerController::Move(const FInputActionValue& Value)
 		MovementVector.X *= 0.5;
 		MovementVector.Y *= 0.5;
 	}
-	
+
 	PlayerPawn->AddMovementInput(ForwardDirection, MovementVector.X);
 	PlayerPawn->AddMovementInput(RightDirection, MovementVector.Y);
 
@@ -210,7 +210,6 @@ void ARWPlayerController::Look(const FInputActionValue& Value)
 		this->AddYawInput(LookAxisVector.X);
 		this->AddPitchInput(LookAxisVector.Y);
 	}
-	     
 }
 
 void ARWPlayerController::EnableLook(const FInputActionValue& Value)

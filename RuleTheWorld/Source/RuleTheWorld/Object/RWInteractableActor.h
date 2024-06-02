@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "RWEnums.h"
+#include "Interface/RWItemDataInterface.h"
 #include "RWInteractableActor.generated.h"
 
 

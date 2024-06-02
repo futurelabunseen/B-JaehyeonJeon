@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "RWEnums.h"
 #include "Interface/RWCollisionedItemInterface.h"
 #include "Interface/RWInventoryWidgetInterface.h"
+#include "Interface/RWItemDataInterface.h"
 #include "RWInventoryComponent.generated.h"
 
 
@@ -13,7 +15,7 @@
 DECLARE_MULTICAST_DELEGATE(FOnRepInventoryDelegate);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class RULETHEWORLD_API URWInventoryComponent : public UActorComponent, public IRWInventoryWidgetInterface
+class RULETHEWORLD_API URWInventoryComponent : public UActorComponent, public IRWInventoryWidgetInterface, public IRWItemDataInterface
 {
 	GENERATED_BODY()
 
@@ -28,6 +30,16 @@ public:
 	TScriptInterface<IRWCollisionedItemInterface> CharacterInterface;
 
 protected:
+
+	// Item Data Setting
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	TMap<EItemData, TObjectPtr<class URWItemData>> ItemDataAssetMap; // <EItemData : Item BP>
+
+
+	virtual TMap<EItemData, TObjectPtr<URWItemData>> GetItemDataAssetMap() override;
+	void SetItemDataAssetMap();
+	
+	
 // RWInventoryWidgetInterface
 	// Inventory는 <무슨 아이템, 몇 개>의 형태로 저장됨
 	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_CopiedInventoryToWidget, EditAnywhere, Category = "Inventory")
@@ -73,7 +85,6 @@ protected:
 	TObjectPtr<UUserWidget> InventoryWidgetInstance;
 	
 	void SetInventoryWidgetVisibility();
-
 };
 
 

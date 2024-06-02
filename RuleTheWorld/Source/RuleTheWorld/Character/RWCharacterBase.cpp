@@ -186,6 +186,16 @@ void ARWCharacterBase::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor*
 	}
 }
 
+TObjectPtr<ARWInteractableActor> ARWCharacterBase::GetCollisionedItem()
+{
+	return CollisionedItem;
+}
+
+uint8 ARWCharacterBase::GetIsItemInBound()
+{
+	return bIsItemInBound;
+}
+
 void ARWCharacterBase::AttackHitCheck()
 {
 	
@@ -271,14 +281,12 @@ void ARWCharacterBase::SetStarving()
 void ARWCharacterBase::SetupShelterEntry()
 {
 	bIsInShelter = true;
-
 	NiagaraEffectFire->SetVisibility(false);
 }
 
 void ARWCharacterBase::SetupShelterExit()
 {
 	bIsInShelter = false;
-	
 	NiagaraEffectFire->SetVisibility(true);
 
 	ApplyFireDamageOverTime();

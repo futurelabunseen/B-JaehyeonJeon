@@ -20,6 +20,7 @@ class RULETHEWORLD_API IRWCollisionedItemInterface
 {
 	GENERATED_BODY()
 public:
-	TObjectPtr<class ARWInteractableActor> CollisionedItem = nullptr;
-	uint8 bIsItemInBound:1;
+	virtual TObjectPtr<class ARWInteractableActor> GetCollisionedItem() = 0;
+
+	virtual uint8 GetIsItemInBound() = 0;
 };

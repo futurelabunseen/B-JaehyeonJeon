@@ -53,6 +53,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
 	float JumpingThreshold;
 	
+
+
+	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
 	FRandomStream RandomStream;
 	
@@ -67,4 +71,11 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
 	float DotProductValue;
+
+public:
+	// Rifle
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
+	uint8 bIsRifleSet : 1;
+
+
 };

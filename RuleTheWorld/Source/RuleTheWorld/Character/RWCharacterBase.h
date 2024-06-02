@@ -8,7 +8,7 @@
 #include "Interface/RWCharacterWidgetInterface.h"
 #include "Interface/RWShelterCollisionInterface.h"
 #include "RWEnums.h" // Enum Type 모음
-#include "..\Interface\RWCollisionedItemInterface.h"
+#include "Interface/RWCollisionedItemInterface.h"
 #include "RWCharacterBase.generated.h"
 
 
@@ -34,13 +34,18 @@ protected:
 	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION()
 	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-	
-	//UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
-	//TObjectPtr<class ARWInteractableActor> CollisionedItem;
-	//UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
-	//uint8 bIsItemInBound:1;
-	//  => 인터페이스로 이동
+
 public:
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
+	TObjectPtr<class ARWInteractableActor> CollisionedItem;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
+	uint8 bIsItemInBound:1;
+
+	virtual TObjectPtr<ARWInteractableActor> GetCollisionedItem() override;
+
+	virtual uint8 GetIsItemInBound() override;
+
+
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
 	TObjectPtr<class APawn> CollisionedPawn;
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")

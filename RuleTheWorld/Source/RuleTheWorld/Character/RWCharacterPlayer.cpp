@@ -4,12 +4,14 @@
 #include "Character/RWCharacterPlayer.h"
 
 
+#include "Animation/RWAnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Engine/CanvasRenderTarget2D.h"
 #include "Net/UnrealNetwork.h"
+#include "Riple/RWRifleComponent.h"
 
 constexpr int32 MAX_COMBO = 3;
 
@@ -25,7 +27,7 @@ ARWCharacterPlayer::ARWCharacterPlayer()
 	// Spring Arm
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.f;
+	CameraBoom->TargetArmLength = 700.f;
 	CameraBoom->bUsePawnControlRotation = true;
 
 	// Camera
@@ -44,6 +46,15 @@ ARWCharacterPlayer::ARWCharacterPlayer()
 	MiniMapSceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("MiniMapSceneCaptrue"));
 	MiniMapSceneCapture->SetupAttachment(MiniMapSpringArm, USpringArmComponent::SocketName);
 	MiniMapSceneCapture->ProjectionType = ECameraProjectionMode::Orthographic;
+
+	// Rifle
+	RifleComponent = CreateDefaultSubobject<URWRifleComponent>(TEXT("Rifle"));
+	RifleMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("RifleSkeletalMesh"));
+
+	// Rile Camera Move
+	CameraTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("CameraTimeline"));
+	DefaultCameraLocation = FVector(0.0f, 0.0f, 0.0f);
+	AimingCameraLocation = FVector(570.0f, 50.0f, 60.0f);
 }
 
 
@@ -58,13 +69,17 @@ void ARWCharacterPlayer::BeginPlay()
 	MiniMapSceneCapture->TextureTarget = MinimapCanvasRenderTarget;
 	
 	// Get AnimInstance
-	AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance = Cast<URWAnimInstance>(GetMesh()->GetAnimInstance());
 
 	// ComboAttack
 	ComboAttackMontages = {ComboAttackMontage1, ComboAttackMontage2, ComboAttackMontage3, ComboAttackMontage4};
 	ComboKickMontages = {ComboKickMontage1, ComboKickMontage2, ComboKickMontage3, ComboKickMontage4};
 
+	// Camera Move
+	SetCameraTimeLine();
 }
+
+
 
 
 void ARWCharacterPlayer::OnRep_PlayerState()
@@ -88,6 +103,7 @@ void ARWCharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(ARWCharacterPlayer, bHasNextComboCommand);
 	
 	DOREPLIFETIME(ARWCharacterPlayer, bIsAttacking);
+	DOREPLIFETIME(ARWCharacterPlayer, bIsReadyForShoot);
 }
 
 void ARWCharacterPlayer::Attack()
@@ -185,5 +201,98 @@ void ARWCharacterPlayer::PostComboAttack()
 	else // Next Attack
 	{
 		bHasNextComboCommand = false;
+	}
+}
+
+void ARWCharacterPlayer::AttachRifleToSocket(const FName& SocketName)
+{
+	USkeletalMeshComponent* OwnerMesh = GetMesh();
+	if (OwnerMesh)
+	{
+		// Owner의 스켈레탈 메시에 소켓이 존재하는지 확인
+		if (OwnerMesh->DoesSocketExist(SocketName))
+		{
+			// Gun을 소켓에 부착
+			RifleMesh->AttachToComponent(OwnerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, SocketName);
+		}
+	}
+}
+
+// 총알 발사된 지점 
+FVector ARWCharacterPlayer::GetFireStartLocation()
+{
+	FName SocketName(TEXT("FireStartPoint"));
+	return GetMesh()->GetSocketLocation(SocketName);
+}
+
+void ARWCharacterPlayer::HandleTimelineProgress(float Value)
+{
+	FVector NewLocation = FMath::Lerp(DefaultCameraLocation, AimingCameraLocation, Value);
+	FollowCamera->SetRelativeLocation(NewLocation);
+
+
+}
+
+void ARWCharacterPlayer::StartAiming()
+{
+	if (CameraTimeline)
+	{
+		CameraTimeline->PlayFromStart();
+	}
+}
+
+void ARWCharacterPlayer::StopAiming()
+{
+	if (CameraTimeline)
+	{
+		CameraTimeline->Reverse();
+	}
+}
+
+void ARWCharacterPlayer::SetReadyForShoot()
+{
+	//bIsReadyForShoot = true;
+	
+	///AnimInstance->bIsRifleSet = true;
+	// 서버에게도 변경값을 알림
+	ServerRPCSetAnimRifleSet(true);
+}
+
+void ARWCharacterPlayer::AbortReadyForShoot()
+{
+	//bIsReadyForShoot = false;
+	
+	//AnimInstance->bIsRifleSet = false;
+	// 서버에게도 변경값을 알림
+	ServerRPCSetAnimRifleSet(false);
+}
+
+void ARWCharacterPlayer::OnRep_SetAnimReadyForShoot()
+{
+	UE_LOG(LogTemp, Log, TEXT("하아ㅓ라넝라ㅓㄴ아러낭ㄹ"));
+	AnimInstance->bIsRifleSet = bIsReadyForShoot;
+}
+
+uint8 ARWCharacterPlayer::GetIsReadyForShoot()
+{
+	return bIsReadyForShoot;
+}
+
+void ARWCharacterPlayer::ServerRPCSetAnimRifleSet_Implementation(uint8 _bIsReadyForShoot)
+{
+	bIsReadyForShoot = _bIsReadyForShoot;
+	AnimInstance->bIsRifleSet = _bIsReadyForShoot;
+}
+
+void ARWCharacterPlayer::SetCameraTimeLine()
+{
+	if (CameraCurve)
+	{
+		// Progress function 바인딩
+		ProgressFunction.BindUFunction(this, FName("HandleTimelineProgress"));
+
+		// Timeline 설정
+		CameraTimeline->AddInterpFloat(CameraCurve, ProgressFunction);
+		CameraTimeline->SetLooping(false);
 	}
 }

@@ -2,6 +2,7 @@
 
 
 #include "Animation/RWAnimInstance.h"
+
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Math/RandomStream.h"
@@ -23,6 +24,8 @@ void URWAnimInstance::NativeInitializeAnimation()
 	}
 	
 	RandomStream = FRandomStream();
+
+	bIsRifleSet = false;
 }
 
 void URWAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
