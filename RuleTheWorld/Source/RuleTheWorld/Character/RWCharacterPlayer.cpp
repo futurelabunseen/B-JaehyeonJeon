@@ -107,6 +107,11 @@ void ARWCharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
 void ARWCharacterPlayer::Attack()
 {
+	if(JumpCurrentCount > 0) // Jump 중엔 수행하지 않음
+	{
+		return;
+	}
+	
 	// 총을 꺼내고 있는 경우에는 총격
 	if(RifleComponent->bIsReadyToShoot)
 	{

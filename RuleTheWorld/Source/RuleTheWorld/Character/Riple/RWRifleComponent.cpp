@@ -110,7 +110,7 @@ void URWRifleComponent::BindAction()
 
 void URWRifleComponent::NetMulticastRPCShootFire_Implementation()
 {
-	OwnerPlayer->PlayAnimMontage(RifleFireMontage, 2);
+	OwnerPlayer->PlayAnimMontage(RifleFireMontage, 3);
 }
 
 void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(FVector CameraTraceStart, FVector CameraTraceEnd)
@@ -227,8 +227,7 @@ void URWRifleComponent::ServerRPCAbortReady_Implementation()
 
 void URWRifleComponent::StartAiming()
 {
-	
-	if(!bIsReadyToShoot || OwnerPlayer->bWasJumping) // 총을 들지 않았거나 점프 중일때는 수행하지 않음
+	if(!bIsReadyToShoot || OwnerPlayer->JumpCurrentCount > 0) // 총을 들지 않았거나 점프 중일때는 수행하지 않음
 	{
 		return;
 	}

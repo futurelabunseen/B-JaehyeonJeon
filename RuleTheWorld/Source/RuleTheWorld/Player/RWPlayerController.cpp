@@ -203,15 +203,15 @@ void ARWPlayerController::Move(const FInputActionValue& Value)
 
 void ARWPlayerController::Look(const FInputActionValue& Value)
 {
-	if(bIsEnableLook)
-	{
-		FVector2D LookAxisVector = Value.Get<FVector2D>();
+	//if(bIsEnableLook) 우클릭 했을 때 카메라 이동되도록 하려 했는데 보류함
 	
-		this->AddYawInput(LookAxisVector.X);
-		this->AddPitchInput(LookAxisVector.Y);
-		
-		ServerRPCSetLook_Implementation(LookAxisVector);
-	}
+	FVector2D LookAxisVector = Value.Get<FVector2D>();
+
+	this->AddYawInput(LookAxisVector.X);
+	this->AddPitchInput(LookAxisVector.Y);
+	
+	ServerRPCSetLook_Implementation(LookAxisVector);
+
 }
 void ARWPlayerController::ServerRPCSetLook_Implementation(FVector2D LookAxisVector)
 {
