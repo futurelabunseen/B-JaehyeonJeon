@@ -209,7 +209,14 @@ void ARWPlayerController::Look(const FInputActionValue& Value)
 	
 		this->AddYawInput(LookAxisVector.X);
 		this->AddPitchInput(LookAxisVector.Y);
+		
+		ServerRPCSetLook_Implementation(LookAxisVector);
 	}
+}
+void ARWPlayerController::ServerRPCSetLook_Implementation(FVector2D LookAxisVector)
+{
+	this->AddYawInput(LookAxisVector.X);
+	this->AddPitchInput(LookAxisVector.Y);
 }
 
 void ARWPlayerController::EnableLook(const FInputActionValue& Value)
@@ -244,6 +251,10 @@ void ARWPlayerController::StopRunning(const FInputActionValue& Value)
 
 void ARWPlayerController::Attack(const FInputActionValue& Value)
 {
+	if(PlayerPawn->bWasJumping) // 점프중인 경우 공격하지 않음
+	{
+		return;
+	}
 	//ProcessComboCommand();
 	PlayerPawn->Attack();
 }

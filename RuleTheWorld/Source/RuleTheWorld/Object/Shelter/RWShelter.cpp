@@ -2,21 +2,22 @@
 
 
 #include "Object/Shelter/RWShelter.h"
+
+#include "Components/SphereComponent.h"
 #include "Interface/RWShelterCollisionInterface.h"
-#include "Components/BoxComponent.h"
 
 // Sets default values
 ARWShelter::ARWShelter()
 {
 	// Set CollisionBox
-	ShelterCollisionBox = CreateDefaultSubobject<UBoxComponent>("ShelterCollisionBox");
-	ShelterCollisionBox->InitBoxExtent(FVector(1000.f, 1000.f,500.f));
-	ShelterCollisionBox->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	ShelterCollisionBox->SetCollisionResponseToAllChannels(ECR_Overlap);
+	ShelterCollisionSphere = CreateDefaultSubobject<USphereComponent>("ShelterCollisionSphere");
+	ShelterCollisionSphere->InitSphereRadius(1000.f);
+	ShelterCollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	ShelterCollisionSphere->SetCollisionResponseToAllChannels(ECR_Overlap);
 	// Set Overlap Delegate
-	ShelterCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ARWShelter::OnOverlapBegin);
-	ShelterCollisionBox->OnComponentEndOverlap.AddDynamic(this, &ARWShelter::OnOverlapEnd);
-	ShelterCollisionBox->SetupAttachment(RootComponent);
+	ShelterCollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &ARWShelter::OnOverlapBegin);
+	ShelterCollisionSphere->OnComponentEndOverlap.AddDynamic(this, &ARWShelter::OnOverlapEnd);
+	ShelterCollisionSphere->SetupAttachment(RootComponent);
 }
 
 // Called when the game starts or when spawned

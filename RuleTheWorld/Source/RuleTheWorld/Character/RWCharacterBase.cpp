@@ -57,6 +57,7 @@ ARWCharacterBase::ARWCharacterBase()
 		GetMesh()->SetSkeletalMesh(CharacterMeshRef.Object);
 	}
 
+
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> DeadMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/RuleTheWorld/Character/Animation/Animations/AM_Dead.AM_Dead'"));
 	if (DeadMontageRef.Object)
 	{

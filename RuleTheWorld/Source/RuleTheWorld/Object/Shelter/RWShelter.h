@@ -19,8 +19,10 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+public:
 // Collision Box Section
-	TObjectPtr<class UBoxComponent> ShelterCollisionBox;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	TObjectPtr<class USphereComponent> ShelterCollisionSphere;
 	UFUNCTION()
 	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION()

@@ -74,6 +74,10 @@ protected:
 	void Look(const FInputActionValue& Value);
 	void EnableLook(const FInputActionValue& Value);
 	void DisableLook(const FInputActionValue& Value);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCSetLook(FVector2D LookAxisVector);
+	
 	void ControllerJump(const FInputActionValue& Value);
 	void ControllerStopJumping(const FInputActionValue& Value);
 	void Run(const FInputActionValue& Value);

@@ -22,10 +22,10 @@ void URWAnimInstance::NativeInitializeAnimation()
 	{
 		Movement = Owner->GetCharacterMovement();
 	}
-	
-	RandomStream = FRandomStream();
+
 
 	bIsRifleSet = false;
+	bIsAiming = false;
 }
 
 void URWAnimInstance::NativeUpdateAnimation(float DeltaSeconds)

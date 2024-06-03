@@ -56,13 +56,6 @@ protected:
 
 
 	
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
-	FRandomStream RandomStream;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
-	float RandomKey;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
 	uint8 bPlayerIsFocusing:1;
 	
@@ -76,6 +69,7 @@ public:
 	// Rifle
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
 	uint8 bIsRifleSet : 1;
-
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
+	uint8 bIsAiming : 1;
 
 };

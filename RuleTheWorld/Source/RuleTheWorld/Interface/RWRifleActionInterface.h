@@ -32,8 +32,5 @@ public:
 	virtual void StartAiming() = 0;
 	virtual void StopAiming() = 0;
 
-	virtual void SetReadyForShoot() = 0;
-	virtual void AbortReadyForShoot() = 0;
-
-	virtual uint8 GetIsReadyForShoot() = 0;
+	virtual TObjectPtr<class URWAnimInstance> GetAnimInstance() = 0;
 };

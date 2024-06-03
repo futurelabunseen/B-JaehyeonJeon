@@ -103,17 +103,19 @@ void ARWCharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(ARWCharacterPlayer, bHasNextComboCommand);
 	
 	DOREPLIFETIME(ARWCharacterPlayer, bIsAttacking);
-	DOREPLIFETIME(ARWCharacterPlayer, bIsReadyForShoot);
 }
 
 void ARWCharacterPlayer::Attack()
 {
-	// 땅 위에 있을 때만 공격 가능하도록
-	if(GetMovementComponent()->Velocity.Z != 0)
+	// 총을 꺼내고 있는 경우에는 총격
+	if(RifleComponent->bIsReadyToShoot)
 	{
-		return;
+		RifleComponent->Fire();
 	}
-	ServerRPCAttack();
+	else // 아닌 경우 일반 공격
+	{
+		ServerRPCAttack();
+	}
 }
 
 void ARWCharacterPlayer::AttackHitCheck()
@@ -249,40 +251,6 @@ void ARWCharacterPlayer::StopAiming()
 	}
 }
 
-void ARWCharacterPlayer::SetReadyForShoot()
-{
-	//bIsReadyForShoot = true;
-	
-	///AnimInstance->bIsRifleSet = true;
-	// 서버에게도 변경값을 알림
-	ServerRPCSetAnimRifleSet(true);
-}
-
-void ARWCharacterPlayer::AbortReadyForShoot()
-{
-	//bIsReadyForShoot = false;
-	
-	//AnimInstance->bIsRifleSet = false;
-	// 서버에게도 변경값을 알림
-	ServerRPCSetAnimRifleSet(false);
-}
-
-void ARWCharacterPlayer::OnRep_SetAnimReadyForShoot()
-{
-	UE_LOG(LogTemp, Log, TEXT("하아ㅓ라넝라ㅓㄴ아러낭ㄹ"));
-	AnimInstance->bIsRifleSet = bIsReadyForShoot;
-}
-
-uint8 ARWCharacterPlayer::GetIsReadyForShoot()
-{
-	return bIsReadyForShoot;
-}
-
-void ARWCharacterPlayer::ServerRPCSetAnimRifleSet_Implementation(uint8 _bIsReadyForShoot)
-{
-	bIsReadyForShoot = _bIsReadyForShoot;
-	AnimInstance->bIsRifleSet = _bIsReadyForShoot;
-}
 
 void ARWCharacterPlayer::SetCameraTimeLine()
 {
@@ -295,4 +263,10 @@ void ARWCharacterPlayer::SetCameraTimeLine()
 		CameraTimeline->AddInterpFloat(CameraCurve, ProgressFunction);
 		CameraTimeline->SetLooping(false);
 	}
+}
+
+// Rifle에서 AnimInstance를 받기 위해
+TObjectPtr<URWAnimInstance> ARWCharacterPlayer::GetAnimInstance()
+{
+	return AnimInstance;
 }

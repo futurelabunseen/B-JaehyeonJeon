@@ -48,4 +48,9 @@ protected:
 	void NetMulticastRPCSetDead();
 
 	void SetDead();
+
+//Using Rifle Section 
+public:
+	UFUNCTION(NetMulticast, Reliable)
+	void NetMulticastOnHitJump();
 };

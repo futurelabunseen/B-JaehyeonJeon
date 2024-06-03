@@ -4,12 +4,24 @@
 #include "Character/Riple/RWRifleComponent.h"
 
 #include "EnhancedInputComponent.h"
+#include "Animal/RWAnimalBase.h"
+#include "Animation/RWAnimInstance.h"
+#include "Blueprint/UserWidget.h"
+#include "Engine/DamageEvents.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Interface/RWRifleActionInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
 URWRifleComponent::URWRifleComponent()
 {
+	static ConstructorHelpers::FObjectFinder<UInputAction> AimingActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/RuleTheWorld/Input/Action/IA_Aiming.IA_Aiming'"));
+	if(nullptr != AimingActionRef.Object)
+	{
+		AimingAction = AimingActionRef.Object;
+	}
+	
 	static ConstructorHelpers::FObjectFinder<UInputAction> ReadyToShootActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/RuleTheWorld/Input/Action/IA_ReadyToShoot.IA_ReadyToShoot'"));
 	if(nullptr != ReadyToShootActionRef.Object)
 	{
@@ -31,6 +43,8 @@ URWRifleComponent::URWRifleComponent()
 	// 초기 값 설정
 	FireRange = 10000.0f; // 발사 거리
 	BulletDamage = 20.0f;
+	
+	
 }
 
 
@@ -49,6 +63,19 @@ void URWRifleComponent::BeginPlay()
 	// 초기 소켓 부착
 	FName SocketName(TEXT("RifleBackSocket"));
 	RifleActionInterface->AttachRifleToSocket(SocketName);
+
+	if (CrossHairWidget != nullptr)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(OwnerPlayer->GetController());
+		CrossHairWidgetInstance = CreateWidget<UUserWidget>(PlayerController, CrossHairWidget);
+
+		if(CrossHairWidgetInstance)
+		{
+			CrossHairWidgetInstance->AddToViewport();
+			CrossHairWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+	
 }
 
 void URWRifleComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -56,67 +83,12 @@ void URWRifleComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(URWRifleComponent, bIsReadyToShoot);
-}
-
-void URWRifleComponent::SetReady()
-{
-	if(bIsReadyToShoot)
-	{
-		bIsReadyToShoot = false;
-		AbortReady();
-		// 카메라 원래 위치로
-		RifleActionInterface->StopAiming();
-		// 캐릭터 Shoot Ready 해제
-		RifleActionInterface->AbortReadyForShoot();
-
-		FName SocketName(TEXT("RifleBackSocket"));
-		RifleActionInterface->AttachRifleToSocket(SocketName);
-	}
-	else
-	{
-		ReadyToShoot();
-		bIsReadyToShoot = true;
-		// 카메라 조준 위치로
-		RifleActionInterface->StartAiming();
-		// 캐릭터 Shoot Ready
-		RifleActionInterface->SetReadyForShoot();
-
-		// 클라이언트에서도 
-		FName SocketName(TEXT("RifleHandSocket"));
-		RifleActionInterface->AttachRifleToSocket(SocketName);
-	}
-}
-
-void URWRifleComponent::ReadyToShoot_Implementation()
-{
-	// 사격 준비
-	FName SocketName(TEXT("RifleHandSocket"));
-	RifleActionInterface->AttachRifleToSocket(SocketName);
-}
-
-void URWRifleComponent::AbortReady_Implementation()
-{
-	// 사격 준비 취소
-	FName SocketName(TEXT("RifleBackSocket"));
-	RifleActionInterface->AttachRifleToSocket(SocketName);
-}
-
-void URWRifleComponent::Fire()
-{
-	UE_LOG(LogTemp, Log, TEXT("Fire!"));
-	
-	
-	
-	PerformLineTrace();
-}
-
-void URWRifleComponent::Reload()
-{
+	DOREPLIFETIME(URWRifleComponent, bIsAiming);
 }
 
 void URWRifleComponent::BindAction()
 {
-	APawn* OwnerPlayer = Cast<APawn>(GetOwner());
+	OwnerPlayer = Cast<ACharacter>(GetOwner());
 	if(OwnerPlayer)
 	{
 		APlayerController* PlayerController = Cast<APlayerController>(OwnerPlayer->GetController());
@@ -125,6 +97,9 @@ void URWRifleComponent::BindAction()
 			if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
 			{
 				// Bind PickUp Action
+				EnhancedInputComponent->BindAction(AimingAction, ETriggerEvent::Triggered, this, &URWRifleComponent::StartAiming);
+				EnhancedInputComponent->BindAction(AimingAction, ETriggerEvent::Completed, this, &URWRifleComponent::StopAiming);
+   
 				EnhancedInputComponent->BindAction(ReadyToShootAction, ETriggerEvent::Triggered, this, &URWRifleComponent::SetReady);
 				EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &URWRifleComponent::Fire);
 				EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &URWRifleComponent::Reload);
@@ -133,48 +108,22 @@ void URWRifleComponent::BindAction()
 	}
 }
 
-void URWRifleComponent::PerformLineTrace()
+void URWRifleComponent::NetMulticastRPCShootFire_Implementation()
 {
-	AActor* Owner = GetOwner();
-	if (!Owner)
-	{
-		UE_LOG(LogTemp, Log, TEXT("opps!"));
-		return;
-	}
-	APawn* OwnerPawn = Cast<APawn>(Owner);
-	APlayerController* OwnerController = Cast<APlayerController>(OwnerPawn->GetController());
+	OwnerPlayer->PlayAnimMontage(RifleFireMontage, 2);
+}
 
-	// GetViewportSize
-	int32 ViewportSizeX;
-	int32 ViewportSizeY;
-	OwnerController->GetViewportSize(ViewportSizeX, ViewportSizeY);
-
-
-	// Get screen space location of crosshairs
-	FVector2D CrosshairLocation(ViewportSizeX / 2.f, ViewportSizeY / 2.f);
-	CrosshairLocation.Y -= 50.f;
+void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(FVector CameraTraceStart, FVector CameraTraceEnd)
+{
 	
-	FVector CrosshairWorldPosition;
-	FVector CrosshairWorldDirection;
-
-	// Get world position and direction of crosshairs
-	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld
-		(UGameplayStatics::GetPlayerController(this, 0),// Player의 controller
-		CrosshairLocation,  // 2D 상의 Crosshair의 위치
-		CrosshairWorldPosition,   // 3D상의 Crosshair 계산 결과를 얻을 변수
-		CrosshairWorldDirection); // 3D상의 Crosshair 의 방향
-
-	// First LineTrace (Start : CrossHair)
-	FVector CameraTraceStart = CrosshairWorldPosition;
-	//FVector Start = RifleActionInterface->GetFireStartLocation();
-	FVector CameraTraceEnd = CameraTraceStart + (CrosshairWorldDirection * FireRange);
 
 	FHitResult HitResult;
 	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(Owner);
+	Params.AddIgnoredActor(OwnerPlayer);
 	
 	// 라인 트레이스 수행
 	bool bHitFirst = GetWorld()->LineTraceSingleByChannel(HitResult, CameraTraceStart, CameraTraceEnd, ECC_Visibility, Params);
+	DrawDebugLine(GetWorld(), CameraTraceStart, CameraTraceEnd, FColor::Blue, false, 1, 0, 1);
 	
 	if (bHitFirst)
 	{
@@ -196,7 +145,7 @@ void URWRifleComponent::PerformLineTrace()
 			FVector RifleTraceStart = RifleActionInterface->GetFireStartLocation();
 			FVector RifleTraceEnd = HitResult.ImpactPoint; // 피격 당한 곳
 
-			bool bHitSecond = GetWorld()->LineTraceSingleByChannel(HitResult, RifleTraceStart, RifleTraceEnd, ECC_Visibility, Params);
+			bool bHitSecond = GetWorld()->LineTraceSingleByChannel(HitResult, RifleTraceStart, RifleTraceEnd, ECC_Pawn, Params);
 			if(bHitSecond)
 			{
 				HitActor = HitResult.GetActor();
@@ -204,9 +153,26 @@ void URWRifleComponent::PerformLineTrace()
 				{
 					// 여기서 데미지 처리
 				}
-				
+
 				DrawDebugLine(GetWorld(), RifleTraceStart, HitResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
 				DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 10, FColor::Green, false, 1);
+
+				UE_LOG(LogTemp,Log, TEXT("Hit Result : %s"), *HitResult.GetActor()->GetName());
+
+				ACharacter* HitCharacter = Cast<ACharacter>(HitActor);
+				if(HitCharacter)
+				{
+					float AttackDamage = 100.0f;
+					FDamageEvent DamageEvent;
+					HitCharacter->TakeDamage(AttackDamage, DamageEvent, OwnerPlayer->GetController(), OwnerPlayer);
+				}
+
+				// 동물이 맞은 경우 점프
+				ARWAnimalBase* HitAnimal = Cast<ARWAnimalBase>(HitActor);
+				if(HitAnimal)
+				{
+					HitAnimal->NetMulticastOnHitJump();
+				}
 			}
 		}
 	}
@@ -215,6 +181,181 @@ void URWRifleComponent::PerformLineTrace()
 		// 디버그 라인 그리기 (옵션)
 		DrawDebugLine(GetWorld(), CameraTraceStart, CameraTraceEnd, FColor::Blue, false, 1, 0, 1);
 	}
+
+
+	// 총격 애니메이션 및 효과
+	NetMulticastRPCShootFire();
+}
+
+void URWRifleComponent::SetReady()
+{
+	if(bIsReadyToShoot)
+	{
+		
+		bIsReadyToShoot = false;
+		ServerRPCAbortReady();
+		// 카메라 원래 위치로
+		RifleActionInterface->StopAiming();
+		
+		SetAnimReadyToShoot(false);
+	}
+	else
+	{
+		bIsReadyToShoot = true;
+		ServerRPCReadyToShoot();
+		
+		// 카메라 조준 위치로
+		RifleActionInterface->StartAiming();
+		
+		SetAnimReadyToShoot(true);
+	}
+}
+
+void URWRifleComponent::ServerRPCReadyToShoot_Implementation()
+{
+	SetAnimReadyToShoot(true);
+
+	NetMulticastRPCAnimReadyToShoot(true);
+}
+
+void URWRifleComponent::ServerRPCAbortReady_Implementation()
+{
+	SetAnimReadyToShoot(false);
+
+	NetMulticastRPCAnimReadyToShoot(false);
+}
+
+void URWRifleComponent::StartAiming()
+{
+	
+	if(!bIsReadyToShoot || OwnerPlayer->bWasJumping) // 총을 들지 않았거나 점프 중일때는 수행하지 않음
+	{
+		return;
+	}
+
+	CrossHairWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+	bIsAiming = true;
+	OwnerPlayer->bUseControllerRotationYaw = true;
+	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -60.f,0.0f));
+	ServerRPCStartAiming();
+}
+
+void URWRifleComponent::StopAiming()
+{
+	CrossHairWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+	
+	if(!bIsReadyToShoot)
+	{
+		return;
+	}
+	
+	bIsAiming = false;
+	OwnerPlayer->bUseControllerRotationYaw = false;
+	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.f,0.0f));
+	ServerRPCCompleteAiming();
+}
+
+void URWRifleComponent::ServerRPCStartAiming_Implementation()
+{
+	SetAnimAiming(true);
+	OwnerPlayer->bUseControllerRotationYaw = true;
+	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -60.f,0.0f));
+	NetMulticastRPCSetAiming(true);
+}
+
+void URWRifleComponent::ServerRPCCompleteAiming_Implementation()
+{
+	SetAnimAiming(false);
+	OwnerPlayer->bUseControllerRotationYaw = false;
+	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.f,0.0f));
+	NetMulticastRPCSetAiming(false);
+}
+
+
+void URWRifleComponent::NetMulticastRPCSetAiming_Implementation(uint8 _bIsAiming)
+{
+	SetAnimAiming(_bIsAiming);
+	if(_bIsAiming)
+	{
+		OwnerPlayer->GetCharacterMovement()->SetMovementMode(MOVE_None);
+	}
+	else
+	{
+		OwnerPlayer->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	}
+}
+
+void URWRifleComponent::Fire()
+{
+	if(!bIsAiming) // 조준하고 있지 않은 경우에 총 쏘지 못하게 함
+	{
+		return;
+	}
+
+	// GetViewportSize
+	int32 ViewportSizeX;
+	int32 ViewportSizeY;
+	APlayerController* OwnerController = Cast<APlayerController>(OwnerPlayer->GetController());
+	OwnerController->GetViewportSize(ViewportSizeX, ViewportSizeY);
+
+	// Get screen space location of crosshairs
+	FVector2D CrosshairLocation(ViewportSizeX / 2.f, ViewportSizeY / 2.f);
+	CrosshairLocation.Y ;
+	
+	FVector CrosshairWorldPosition;
+	FVector CrosshairWorldDirection;
+
+	// Get world position and direction of crosshairs
+	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld
+		(UGameplayStatics::GetPlayerController(this, 0),// Player의 controller
+		CrosshairLocation,  // 2D 상의 Crosshair의 위치
+		CrosshairWorldPosition,   // 3D상의 Crosshair 계산 결과를 얻을 변수
+		CrosshairWorldDirection); // 3D상의 Crosshair 의 방향
+
+	// First LineTrace (Start : CrossHair)
+	FVector CameraTraceStart = CrosshairWorldPosition;
+	//FVector Start = RifleActionInterface->GetFireStartLocation();
+	FVector CameraTraceEnd = CameraTraceStart + (CrosshairWorldDirection * FireRange);
+
+	// 총격에 대해 서버 RPC를 보냄
+	ServerRPCPerformLineTrace(CameraTraceStart, CameraTraceEnd);
+	
+}
+
+void URWRifleComponent::CalcCameraTracePoint(FVector CameraTraceStart, FVector CameraTraceEnd)
+{
+}
+
+void URWRifleComponent::Reload()
+{
+}
+
+void URWRifleComponent::NetMulticastRPCAnimReadyToShoot_Implementation(uint8 _bIsReadyToShoot)
+{
+	SetAnimReadyToShoot(_bIsReadyToShoot);
+	FName SocketName;
+	if(_bIsReadyToShoot)
+	{
+		// 사격 준비
+		SocketName = (TEXT("RifleHandSocket"));
+		RifleActionInterface->AttachRifleToSocket(SocketName);
+	}
+	else
+	{
+		SocketName = (TEXT("RifleBackSocket"));
+		RifleActionInterface->AttachRifleToSocket(SocketName);
+	}
+	RifleActionInterface->AttachRifleToSocket(SocketName);
+}
+
+void URWRifleComponent::SetAnimReadyToShoot(uint8 _bIsReadyForShoot)
+{
+	RifleActionInterface->GetAnimInstance()->bIsRifleSet = _bIsReadyForShoot;
+}
+
+void URWRifleComponent::SetAnimAiming(uint8 _bIsAiming)
+{
+	RifleActionInterface->GetAnimInstance()->bIsAiming = _bIsAiming;
 }
 
 

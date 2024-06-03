@@ -116,31 +116,15 @@ public:
 
 	void SetCameraTimeLine();
 
+// Rifle action Interface
 
-
-	// Rifle action Interface
-
+	virtual TObjectPtr<class URWAnimInstance> GetAnimInstance() override;
 	// TimeLine으로 호출할 함수
 	UFUNCTION()
 	virtual void HandleTimelineProgress(float Value) override;
 
 	virtual void StartAiming() override;
 	virtual void StopAiming() override;
-	
-	virtual void SetReadyForShoot() override;
-	virtual void AbortReadyForShoot() override;
-
-	// Shooting Ready
-	UPROPERTY(ReplicatedUsing = OnRep_SetAnimReadyForShoot)
-	uint8 bIsReadyForShoot:1 = false;
-
-	UFUNCTION()
-	void OnRep_SetAnimReadyForShoot();
-	
-	virtual uint8 GetIsReadyForShoot() override;
-
-	UFUNCTION(Server, Reliable)
-	void ServerRPCSetAnimRifleSet(uint8 _bIsReadyForShoot);
 	
 private:
 	FVector DefaultCameraLocation;

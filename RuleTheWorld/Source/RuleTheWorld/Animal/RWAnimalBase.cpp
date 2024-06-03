@@ -118,6 +118,11 @@ void ARWAnimalBase::SetDead()
 	NetMulticastRPCSetDead();
 }
 
+void ARWAnimalBase::NetMulticastOnHitJump_Implementation()
+{
+	this->Jump();
+}
+
 void ARWAnimalBase::MulticastRPCAnimalAttack_Implementation()
 {
 	// Animal Attack에 대한 Montage를 실행하도록 RPC를 전송
