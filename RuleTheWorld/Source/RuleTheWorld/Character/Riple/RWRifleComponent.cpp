@@ -14,6 +14,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
+constexpr uint8 INITIAL_BULLET = 100;
+constexpr float FIRE_RANGE = 10000.0f; // 발사 거리
+constexpr float BULLET_DAMAGE = 20.0f;
+constexpr uint8 LOADED_BULLET_NUM = 5;
+
 URWRifleComponent::URWRifleComponent()
 {
 	static ConstructorHelpers::FObjectFinder<UInputAction> AimingActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/RuleTheWorld/Input/Action/IA_Aiming.IA_Aiming'"));
@@ -41,10 +46,11 @@ URWRifleComponent::URWRifleComponent()
 	}
 	
 	// 초기 값 설정
-	FireRange = 10000.0f; // 발사 거리
-	BulletDamage = 20.0f;
-	
-	
+	FireRange = FIRE_RANGE; // 발사 거리
+	BulletDamage = BULLET_DAMAGE;
+
+	BulletNum = INITIAL_BULLET;
+	LoadedBullet = 0;
 }
 
 
@@ -84,6 +90,38 @@ void URWRifleComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 	DOREPLIFETIME(URWRifleComponent, bIsReadyToShoot);
 	DOREPLIFETIME(URWRifleComponent, bIsAiming);
+	DOREPLIFETIME(URWRifleComponent, BulletNum);
+	DOREPLIFETIME(URWRifleComponent, LoadedBullet);
+}
+
+
+
+void URWRifleComponent::Reload()
+{
+	if(LoadedBullet > 0 || BulletNum < LOADED_BULLET_NUM) //  
+	{
+		return;
+	}
+	
+	ServerRPCReload();
+}
+
+
+void URWRifleComponent::ServerRPCReload_Implementation()
+{
+	BulletNum = FMath::Clamp(BulletNum - LOADED_BULLET_NUM, 0, 100);
+	LoadedBullet = LOADED_BULLET_NUM;
+	UE_LOG(LogTemp, Log, TEXT("%d %d"), BulletNum, LoadedBullet);
+	NetMulticastRPCReload_Implementation();
+}
+
+void URWRifleComponent::NetMulticastRPCReload_Implementation()
+{
+	// 애니메이션 재생
+	if(ReloadMontage)
+	{
+		OwnerPlayer->PlayAnimMontage(ReloadMontage);
+	}
 }
 
 void URWRifleComponent::BindAction()
@@ -111,6 +149,11 @@ void URWRifleComponent::BindAction()
 void URWRifleComponent::NetMulticastRPCShootFire_Implementation()
 {
 	OwnerPlayer->PlayAnimMontage(RifleFireMontage, 3);
+	
+	if (FireSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, FireSound, OwnerPlayer->GetActorLocation());
+	}
 }
 
 void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(FVector CameraTraceStart, FVector CameraTraceEnd)
@@ -231,8 +274,10 @@ void URWRifleComponent::StartAiming()
 	{
 		return;
 	}
-
-	CrossHairWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+	if(CrossHairWidgetInstance)
+	{
+		CrossHairWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+	}
 	bIsAiming = true;
 	OwnerPlayer->bUseControllerRotationYaw = true;
 	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -60.f,0.0f));
@@ -241,11 +286,14 @@ void URWRifleComponent::StartAiming()
 
 void URWRifleComponent::StopAiming()
 {
-	CrossHairWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
-	
 	if(!bIsReadyToShoot)
 	{
 		return;
+	}
+
+	if(CrossHairWidgetInstance)
+	{
+		CrossHairWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 	}
 	
 	bIsAiming = false;
@@ -319,14 +367,6 @@ void URWRifleComponent::Fire()
 	// 총격에 대해 서버 RPC를 보냄
 	ServerRPCPerformLineTrace(CameraTraceStart, CameraTraceEnd);
 	
-}
-
-void URWRifleComponent::CalcCameraTracePoint(FVector CameraTraceStart, FVector CameraTraceEnd)
-{
-}
-
-void URWRifleComponent::Reload()
-{
 }
 
 void URWRifleComponent::NetMulticastRPCAnimReadyToShoot_Implementation(uint8 _bIsReadyToShoot)

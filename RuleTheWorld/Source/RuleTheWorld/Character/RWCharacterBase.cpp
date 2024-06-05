@@ -262,7 +262,9 @@ void ARWCharacterBase::MulticastRPCSetDead_Implementation()
 	{
 		NiagaraEffectFire->SetVisibility(false);	
 	}
+
 	
+ 	
 	// 더 이상 충돌되지 않도록
 	SetActorEnableCollision(false);
 }

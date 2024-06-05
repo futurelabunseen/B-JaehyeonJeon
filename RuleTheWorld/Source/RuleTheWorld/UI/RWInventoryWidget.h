@@ -29,6 +29,7 @@ public:
 
 	TObjectPtr<UActorComponent> InventoryComponent;
 
+// Item Image
 public:
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<class UImage> InventoryImage0;
@@ -67,5 +68,41 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void BindTexturesFromInterface();
+
+// Item Num
+public:
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UTextBlock> ItemNumText0;
 	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UTextBlock> ItemNumText1;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UTextBlock> ItemNumText2;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UTextBlock> ItemNumText3;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UTextBlock> ItemNumText4;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UTextBlock> ItemNumText5;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UTextBlock> ItemNumText6;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UTextBlock> ItemNumText7;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UTextBlock> ItemNumText8;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UTextBlock> ItemNumText9;
+
+	TArray<TObjectPtr<class UTextBlock>> ItemNumTexts;
+
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void SetItemText(UTextBlock* TextBlock, const uint8& ItemNum);
 };

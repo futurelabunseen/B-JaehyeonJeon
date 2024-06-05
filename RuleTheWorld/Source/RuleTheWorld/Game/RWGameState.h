@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
-#include "Net/UnrealNetwork.h"
 #include "RWGameState.generated.h"
 
 /**
@@ -25,15 +24,7 @@ public:
 // Network
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	/*
-	UFUNCTION(Server, Reliable)
-	void ServerRequestTimeVariable();
-	
 
-	
-	void RequestTimeVariableFromServer();
-	*/
-	
 	UPROPERTY(BlueprintReadOnly, Category = "Time")
 	FTimerHandle TimerHandle_RequestGameTime;
 	
@@ -52,8 +43,7 @@ protected:
 	int32 CurrentHour;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Day, Meta = (AllowPrivateAccess = "true"))
 	int32 CurrentMinute;
-	
-	FTimerHandle TimeUpdateHandle;
+
 	
 public:
 	UFUNCTION()
@@ -64,4 +54,18 @@ public:
 	float GetClientCurrentTime() const;
 	float GetClientDayProgressPercent() const;
 	int32 GetClientDayScore() const;
+
+
+// BackGround Music
+public:
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Sound)
+	TObjectPtr<class UAudioComponent> AudioComponent;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Sound)
+	TObjectPtr<class USoundWave> DayBGM;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Sound)
+	TObjectPtr<class USoundWave> NightBGM;
+
+	void PlaySound(class USoundWave* SoundWave);
+	
 };

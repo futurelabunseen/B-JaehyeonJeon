@@ -66,12 +66,31 @@ public:
 	// 총 발사
 	void Fire();
 
-	void CalcCameraTracePoint(FVector CameraTraceStart, FVector CameraTraceEnd);
-	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
 	TObjectPtr<class UAnimMontage> RifleFireMontage;
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+	TObjectPtr<class USoundWave> FireSound;
+
+
+	// 총탄 및 장전
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = Sound)
+	uint8 BulletNum;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = Sound)
+	uint8 LoadedBullet;
+
 	void Reload();
+	
+	UFUNCTION(Server, Reliable)
+	void ServerRPCReload();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void NetMulticastRPCReload();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
+	TObjectPtr<class UAnimMontage> ReloadMontage;
+
+	
 	
 	// 발사 거리
 	float FireRange;

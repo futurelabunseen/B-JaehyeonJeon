@@ -4,6 +4,7 @@
 #include "UI/RWInventoryWidget.h"
 
 #include "Components/Image.h"
+#include "Components/TextBlock.h"
 #include "Interface/RWItemDataInterface.h"
 #include "Interface/RWInventoryWidgetInterface.h"
 #include "Object/RWItemData.h"
@@ -20,6 +21,8 @@ void URWInventoryWidget::NativeConstruct()
 	
 	InventoryImages = {InventoryImage0, InventoryImage1, InventoryImage2, InventoryImage3, InventoryImage4,
 		InventoryImage5, InventoryImage6, InventoryImage7, InventoryImage8, InventoryImage9};
+
+	ItemNumTexts = {ItemNumText0, ItemNumText1, ItemNumText2, ItemNumText3, ItemNumText4, ItemNumText5, ItemNumText6, ItemNumText7, ItemNumText8, ItemNumText9};
 	
 	// Interface로 Component를 찾아내는 놀라운 방법 / TArray로 반환하니 0번째 인덱스를 반환하도록 함
 	InventoryComponent = GetOwningPlayer()->GetComponentsByInterface(URWInventoryWidgetInterface::StaticClass())[0];
@@ -40,28 +43,6 @@ void URWInventoryWidget::InventoryCopy()
 	
 	// Declare : RWInventoryInterface , Define : RWInventoryComponent
 	CopiedInventory = InventoryWidget->GetInventoryData();
-	for(auto& a : CopiedInventory.InventoryItemSubjects)
-	{
-		if(a == EItemData::None)
-		{
-			UE_LOG(LogTemp, Log, TEXT("Inventory Subject : None"));	
-		}
-		else if(a == EItemData::Meat)
-		{
-			UE_LOG(LogTemp, Log, TEXT("Inventory Subject : Meat"));	
-		}
-		else if(a == EItemData::Plant)
-		{
-			UE_LOG(LogTemp, Log, TEXT("Inventory Subject : Plant"));	
-		}
-			
-	}
-	
-	for(auto& a : CopiedInventory.InventoryItemNums)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Inventory Num : %d"), a);
-	}
-	
 	BindTexturesFromInterface(); // 인벤토리 받아올 때, Texture 설정도 같이 
 }
 
@@ -73,6 +54,18 @@ void URWInventoryWidget::SetImageTexture(UImage* ImageWidget, UTexture2D* NewTex
 		ImageWidget->SetBrushFromTexture(NewTexture);
 	}
 }
+
+
+void URWInventoryWidget::SetItemText(UTextBlock* TextBlock, const uint8& ItemNum)
+{
+	if(TextBlock && ItemNum)
+	{
+		FString ItemNumString = FString::Printf(TEXT("%d"), ItemNum);
+		TextBlock->SetText(FText::FromString(ItemNumString));
+	}
+}
+
+
 
 void URWInventoryWidget::BindTexturesFromInterface()
 {
@@ -89,7 +82,7 @@ void URWInventoryWidget::BindTexturesFromInterface()
 		// Image에 텍스쳐 설정
 		URWItemData* ItemData = ItemDataMap[CopiedInventory.InventoryItemSubjects[Index]];
 		SetImageTexture(InventoryImage, ItemData->ItemTexture);
-		
+		SetItemText(ItemNumTexts[Index], CopiedInventory.InventoryItemNums[Index]);
 		Index++;
 	}
 }
