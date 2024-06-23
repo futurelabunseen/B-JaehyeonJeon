@@ -19,4 +19,6 @@ ARWAnimalPig::ARWAnimalPig()
 	{
 		GetMesh()->SetSkeletalMesh(AnimalMeshRef.Object);
 	}
+	
+	AnimalData = EAnimalData::Pig;
 }

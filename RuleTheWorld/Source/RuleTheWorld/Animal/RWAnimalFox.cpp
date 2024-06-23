@@ -19,4 +19,5 @@ ARWAnimalFox::ARWAnimalFox()
 		GetMesh()->SetSkeletalMesh(AnimalMeshRef.Object);
 	}
 	
+	AnimalData = EAnimalData::Fox;
 }

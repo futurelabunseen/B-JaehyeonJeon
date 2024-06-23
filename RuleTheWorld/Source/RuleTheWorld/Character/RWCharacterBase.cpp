@@ -115,6 +115,20 @@ void ARWCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ARWCharacterBase, bIsInShelter);
 }
 
+ECharacterState ARWCharacterBase::GetCharacterState()
+{
+	return CharacterState;
+}
+
+void ARWCharacterBase::SetCharacterState(ECharacterState NewState)
+{
+	// CharacterState 변경
+	if (CharacterState != NewState)
+	{
+		CharacterState = NewState;
+	}
+}
+
 void ARWCharacterBase::SetUpCharacterWidget(URWMainWidget* MainWidget)
 {
 	//IRWCharacterWidgetInterface::SetUpCharacterWidget(MainWidget);
@@ -232,6 +246,11 @@ float ARWCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 {
 	// EventInstigator -> 나에게 피해를 입힌 Controller, DamageCauser -> 사용한 무기 또는 빙의한 폰 (데미지를 준) 
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if(this->CharacterState == ECharacterState::Dead) // 캐릭터가 죽어있는 경우에는 공격받지 
+	{
+		return 0.f;
+	}
 	
 	// Damage 받은 것을 StatComponent에서 적용시킴
 	StatComponent->ApplyDamage(DamageAmount);
@@ -241,6 +260,7 @@ float ARWCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 
 void ARWCharacterBase::SetDead()
 {
+	// 캐릭터가 가지고 있는 EnhancedInputComponent 가져오기
 	ServerRPCSetDead();
 }
 
@@ -256,15 +276,13 @@ void ARWCharacterBase::MulticastRPCSetDead_Implementation()
 	GetCharacterMovement()->SetMovementMode(MOVE_None);
 
 	// 사망 시 State 교체 및 불 이펙트 종료
-	CharacterState = ECharacterState::Dead;
+	SetCharacterState(ECharacterState::Dead);
 	NiagaraEffectFire->Deactivate();
 	if(NiagaraEffectFire->IsVisible())
 	{
 		NiagaraEffectFire->SetVisibility(false);	
 	}
 
-	
- 	
 	// 더 이상 충돌되지 않도록
 	SetActorEnableCollision(false);
 }
@@ -298,12 +316,11 @@ void ARWCharacterBase::SetupShelterExit()
 void ARWCharacterBase::ApplyFireDamageOverTime()
 {
 	// 죽었거나 Shelter안으로 들어간 경우 동작하지 않음 <- Timer로 다시 호출되는 경우에 핵심
-	if(bIsInShelter || CharacterState == ECharacterState::Dead)
+	if(bIsInShelter || GetCharacterState() == ECharacterState::Dead)
 	{
 		return;	
 	}
-
-	// 여기에 밤 되는거 추가
+	
 	if(HasAuthority())
 	{
 		StatComponent->ApplyDamage(OUTDOOR_FIRE_DAMAGE);

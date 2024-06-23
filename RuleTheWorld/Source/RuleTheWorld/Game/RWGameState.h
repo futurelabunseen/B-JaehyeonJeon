@@ -67,5 +67,22 @@ public:
 	TObjectPtr<class USoundWave> NightBGM;
 
 	void PlaySound(class USoundWave* SoundWave);
+
+
+// GameEvent UI
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<class URWEventWidget> EventWidgetClass; // BP에서 지정
+	
+	TObjectPtr<class URWEventWidget> EventWidgetInstance;
+	
+
+	
+	void EventWidgetInstancing();
+	
+// GameEvent
+	void SetDayEvent();
+	void SetNightEvent();
+
 	
 };

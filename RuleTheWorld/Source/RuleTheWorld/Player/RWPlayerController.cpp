@@ -7,6 +7,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
 
+#include "RWEnums.h"
 #include "Character/RWCharacterPlayer.h"
 #include "Character/Inventory/RWInventoryComponent.h"
 #include "Object/RWInteractableActor.h"
@@ -128,11 +129,6 @@ void ARWPlayerController::SetupInputComponent()
 	EnhancedInputComponent->BindAction(FocusingAction, ETriggerEvent::Completed, this, &ARWPlayerController::StopFocusing);
 }
 
-void ARWPlayerController::OnPossess()
-{
-	
-}
-
 void ARWPlayerController::PostNetInit()
 {
 	Super::PostNetInit();
@@ -251,10 +247,11 @@ void ARWPlayerController::StopRunning(const FInputActionValue& Value)
 
 void ARWPlayerController::Attack(const FInputActionValue& Value)
 {
-	if(PlayerPawn->bWasJumping) // 점프중인 경우 공격하지 않음
+	if(PlayerPawn->bWasJumping || PlayerPawn->CharacterState == ECharacterState::Dead) // 점프중인 경우 공격하지 않음
 	{
 		return;
 	}
+	
 	//ProcessComboCommand();
 	PlayerPawn->Attack();
 }

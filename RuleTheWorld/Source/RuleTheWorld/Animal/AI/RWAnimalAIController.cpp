@@ -3,11 +3,10 @@
 
 #include "Animal/AI/RWAnimalAIController.h"
 
-#include "BehaviorTree/BlackboardData.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Character/RWCharacterBase.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
+#include "Interface/RWCharacterStateInterface.h"
 
 
 ARWAnimalAIController::ARWAnimalAIController()
@@ -31,13 +30,47 @@ ARWAnimalAIController::ARWAnimalAIController()
 
 void ARWAnimalAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	ARWCharacterBase* Player = Cast<ARWCharacterBase>(Actor);
-	if(Player)
+	IRWCharacterStateInterface* PlayerInterface = Cast<IRWCharacterStateInterface>(Actor);
+	if(PlayerInterface)
 	{
+		if(PlayerInterface->GetCharacterState() == ECharacterState::Dead)
+		{
+			return;
+		}
+		
 		FName BoolKeyName = FName("HasLineOfSight");
 		FName EnemyKeyName = FName("EnemyActor");
 		BlackboardComponent->SetValueAsBool(BoolKeyName, true);
-		BlackboardComponent->SetValueAsObject(EnemyKeyName, Player);
-		
+		BlackboardComponent->SetValueAsObject(EnemyKeyName, Actor);
+
+		// 1초마다 플레이어의 상태를 체크하는 함수
+		CheckCharacterState(Actor);
+	}
+	
+}
+
+// 죽은 캐릭터를 공격하지 않도록 설정
+void ARWAnimalAIController::CheckCharacterState(AActor* Actor)
+{
+	IRWCharacterStateInterface* PlayerInterface = Cast<IRWCharacterStateInterface>(Actor);
+	if(PlayerInterface->GetCharacterState() == ECharacterState::Dead)
+	{
+		FName BoolKeyName = FName("HasLineOfSight");
+		FName EnemyKeyName = FName("EnemyActor");
+		BlackboardComponent->SetValueAsBool(BoolKeyName, false);
+		BlackboardComponent->ClearValue(EnemyKeyName);
+	}
+	else
+	{
+		FTimerHandle CharacterStateCheckTimerHandle;
+		FTimerDelegate CheckCharacterStateDelegate;
+		CheckCharacterStateDelegate.BindUFunction(this, FName("CheckCharacterState"), Actor);
+        GetWorld()->GetTimerManager().SetTimer(
+        	CharacterStateCheckTimerHandle,
+        	CheckCharacterStateDelegate,
+        	1.0f,
+        	false
+        );
 	}
 }
+

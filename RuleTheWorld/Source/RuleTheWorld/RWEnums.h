@@ -15,6 +15,22 @@ enum class ECharacterState : int8
 	Dead UMETA(DisplayName = "Dead")
 };
 
+UENUM()
+enum class EAnimalState : int8
+{
+	Live UMETA(DisplayName = "Live"),
+	Dead UMETA(DisplayName = "Dead")
+};
+
+UENUM()
+enum class EAnimalData : int8
+{
+	None UMETA(DisplayName = "None"),
+	Wolf UMETA(DisplayName = "Wolf"),
+	Pig UMETA(DisplayName = "Pig"),
+	Fox UMETA(DisplayName = "Fox"),
+};
+
 
 UENUM()
 enum class EItemData : int8
@@ -23,5 +39,7 @@ enum class EItemData : int8
 	Meat UMETA(DisplayName = "Meat"),
 	Plant UMETA(DisplayName = "Plant")
 };
+
+
 
 

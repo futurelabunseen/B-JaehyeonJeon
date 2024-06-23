@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "RWEnums.h"
 #include "RWAnimalAIController.generated.h"
 
 /**
@@ -16,6 +17,7 @@ class RULETHEWORLD_API ARWAnimalAIController : public AAIController
 
 public:
 	ARWAnimalAIController();
+
 	
 // BlackBoard & AI Perception
 protected:
@@ -32,7 +34,10 @@ protected:
 	TObjectPtr<class UBlackboardComponent> BlackboardComponent;	
 
 	UFUNCTION()
-	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus) ;
+	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+
+	UFUNCTION()
+	void CheckCharacterState(AActor* Actor);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = BT)
 	TObjectPtr<UBehaviorTree> BehaviorTreeAsset;

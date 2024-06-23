@@ -21,4 +21,6 @@ ARWAnimalWolf::ARWAnimalWolf()
 		GetMesh()->SetSkeletalMesh(AnimalMeshRef.Object);
 	}
 
+	
+	AnimalData = EAnimalData::Wolf;
 }

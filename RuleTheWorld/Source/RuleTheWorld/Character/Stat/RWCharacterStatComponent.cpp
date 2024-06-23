@@ -3,6 +3,8 @@
 
 #include "Character/Stat/RWCharacterStatComponent.h"
 
+#include "RWEnums.h"
+#include "Interface/RWCharacterStateInterface.h"
 #include "Net/UnrealNetwork.h"
 
 constexpr float HUNGER_INCREASE_RATE = 1.f;
@@ -116,13 +118,18 @@ void URWCharacterStatComponent::IncreaseHungerOverTime()
 	SetHunger(CurrentHunger + HUNGER_INCREASE_RATE);
 
 	FTimerHandle IncreaseHungerTimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(
-		IncreaseHungerTimerHandle,
-		this,
-		&URWCharacterStatComponent::IncreaseHungerOverTime,
-		1.f,
-		false
-	);
+
+	IRWCharacterStateInterface* CharacterStateInterface = Cast<IRWCharacterStateInterface>(OwnerActor);
+	if(ECharacterState::Dead != CharacterStateInterface->GetCharacterState())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			IncreaseHungerTimerHandle,
+			this,
+			&URWCharacterStatComponent::IncreaseHungerOverTime,
+			1.f,
+			false
+		);
+	}
 }
 
 void URWCharacterStatComponent::ApplyStarvingDamage()

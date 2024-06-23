@@ -17,10 +17,12 @@ ARWLevelScript::ARWLevelScript()
 	// Initialzie SunLight
 	SunLight = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("SunLight"));
 	SunLight->SetAtmosphereSunLight(true);
+	SunLight->SetForwardShadingPriority(1);
 	// Set MoonLight
 	MoonLight = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("MoonLight"));
 	MoonLight->SetIntensity(MOON_LIGHT_INTENSITY);
 	MoonLight->SetMobility(EComponentMobility::Static);
+	MoonLight->SetForwardShadingPriority(0);
 	MoonLight->SetWorldRotation(FRotator(-90.f, 0.f, 0.f));
 	
 	static ConstructorHelpers::FClassFinder<UUserWidget> WidgetClassFinder(TEXT("/Game/RuleTheWorld/UI/Widget_Main.Widget_Main_C"));

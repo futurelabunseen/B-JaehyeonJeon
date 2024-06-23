@@ -75,6 +75,8 @@ DerivedDataCache/*
 
 # Asset
 Content/Asset/*
+Content/Megascans/*
+Content/MSPresets/*
 Content/Map/*
 Content/LevelPrototyping/*
 Content/Cursor/*

@@ -11,16 +11,14 @@
 #include "GameFramework/PlayerState.h"
 #include "Player/RWPlayerController.h"
 
-constexpr float START_TIME = 120.f; // Game Start 06:00 
+constexpr float START_TIME = 0.f; // Game Start 06:00  120
 constexpr float ONE_DAY = 480.f; // 8min(Real Time) = 1Day / 1min = 3Hours / 20sec = 1Hour
 constexpr int ONE_HOUR = 20;
 
 ARWGameMode::ARWGameMode()
 {
-	//DefaultPawnClass <- 해야 함
 	PrimaryActorTick.bCanEverTick = true;
-
-	//static ConstructorHelpers::FClassFinder<APawn> DefaultPawnClassRef(TEXT("/Script/RuleTheWorld.RWCharacterPlayer"));
+	
 	static  ConstructorHelpers::FClassFinder<APawn> DefaultPawnClassRef(TEXT("/Game/RuleTheWorld/Character/BP_RWCharacterPlayer.BP_RWCharacterPlayer_C"));
 	if(DefaultPawnClassRef.Class)
 	{
@@ -55,21 +53,21 @@ ARWGameMode::ARWGameMode()
 	{
 		WolfClass = WolfClassRef.Class;
 	}
-	AnimalClasses.Add(WolfClass);
+	AnimalClassMap.Add(EAnimalData::Wolf, WolfClass);
 		
 	static ConstructorHelpers::FClassFinder<ARWAnimalBase> PigClassRef(TEXT("/Game/RuleTheWorld/Animal/BP_Pig.BP_Pig_C"));
 	if(PigClassRef.Class)
 	{
 		PigClass = PigClassRef.Class;
 	}
-	AnimalClasses.Add(PigClass);
+	AnimalClassMap.Add(EAnimalData::Pig, PigClass);
 	
 	static ConstructorHelpers::FClassFinder<ARWAnimalBase> FoxClassRef(TEXT("/Game/RuleTheWorld/Animal/BP_Fox.BP_Fox_C"));
 	if(FoxClassRef.Class)
 	{
 		FoxClass = FoxClassRef.Class;
 	}
-	AnimalClasses.Add(FoxClass);
+	AnimalClassMap.Add(EAnimalData::Fox, FoxClass);
 	
 	// Day
 	CurrentTime = START_TIME;
@@ -78,6 +76,11 @@ ARWGameMode::ARWGameMode()
 
 	// Animal
 	// Set Initial Value
+	AnimalNumMap.Add(EAnimalData::Wolf, {3, 0});
+	AnimalNumMap.Add(EAnimalData::Pig, {10, 0});
+	AnimalNumMap.Add(EAnimalData::Fox, {1, 0});
+	/*
+	 새로운 Map으로 교체
 	AnimalMaxNumMap.Add(WolfClass, 3);
 	AnimalMaxNumMap.Add(PigClass, 10);
 	AnimalMaxNumMap.Add(FoxClass, 1);
@@ -85,6 +88,7 @@ ARWGameMode::ARWGameMode()
 	AnimalCurrentNumMap.Add(WolfClass, 0);
 	AnimalCurrentNumMap.Add(PigClass, 0);
 	AnimalCurrentNumMap.Add(FoxClass, 0);
+	*/
 }
 
 void ARWGameMode::BeginPlay()
@@ -151,20 +155,28 @@ void ARWGameMode::DayChange()
 // 분리
 void ARWGameMode::DayChangeSpawnAnimals()
 {
-	for(auto& AnimalClass : AnimalClasses)
+	for(auto& AnimalClass : AnimalClassMap)
 	{
+		EAnimalData AnimalData = AnimalClass.Key;
 		// Map 순회 , 하나의 Map
-		for(int i = 0; i < AnimalMaxNumMap[AnimalClass] - AnimalCurrentNumMap[AnimalClass]; i++)
+		for(int i = 0; i < AnimalNumMap[AnimalData][0] - AnimalNumMap[AnimalData][1]; i++) // 최대 - 현재로 스폰할 동물의 수 지정
 		{
+			// 현재 시간을 기반으로 시드 생성
+			int32 CurrentRealTime = FDateTime::Now().GetMillisecond();
+
+			// RandomStream 인스턴스 생성 및 난수 생성
 			FRandomStream RandomStream;
+			RandomStream.Initialize(CurrentRealTime);
 			
-			FVector SpawnLocation = FVector(100.0f + RandomStream.FRandRange(0.f, 100.f), 100.0f + RandomStream.FRandRange(0.f, 100.f), 100.0f  + RandomStream.FRandRange(0.f, 100.f));
+			FVector SpawnLocation = FVector(100.0f + RandomStream.FRandRange(-10000.f, 10000.f), 100.0f + RandomStream.FRandRange(-10000.f, 10000.f), 1000.0f  + RandomStream.FRandRange(0.f, 100.f));
 			FRotator SpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
-			GetWorld()->SpawnActor<ACharacter>(AnimalClass, SpawnLocation, SpawnRotation);
-		
-			AnimalCurrentNumMap[AnimalClass]++;
-		
-			UE_LOG(LogTemp, Log, TEXT("GameMode : Spawn %s"), *AnimalClass->GetName());
+			
+			GetWorld()->SpawnActor<ACharacter>(AnimalClass.Value, SpawnLocation, SpawnRotation);
+			
+			AnimalNumMap[AnimalData][1]++;
+			
+			UE_LOG(LogTemp, Log, TEXT("스폰 위치  :  %f %f %f"), SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
+			UE_LOG(LogTemp, Log, TEXT("GameMode : Spawn %s"), *AnimalClass.Value->GetName());
 		}
 	}
 	
@@ -175,13 +187,3 @@ void ARWGameMode::UpdateMaxWolfNum()
 	// 구현 필요
 }
 
-
-void ARWGameMode::DecreaseCurrentAnimalNum(ARWAnimalBase* Animal)
-{
-	TSubclassOf<ARWAnimalBase> AnimalClass = Animal->GetClass();
-	
-	if(AnimalCurrentNumMap[AnimalClass] > 0)
-	{
-		AnimalCurrentNumMap[AnimalClass]--;
-	}
-}

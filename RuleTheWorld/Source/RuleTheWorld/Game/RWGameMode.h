@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "RWEnums.h"
 #include "GameFramework/GameModeBase.h"
 #include "RWGameMode.generated.h"
 
@@ -34,9 +35,9 @@ protected:
 	int32 DayScore;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Day, Meta = (AllowPrivateAccess = "true"))
-	int32 CurrentHour;
+	int32 CurrentHour = 0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Day, Meta = (AllowPrivateAccess = "true"))
-	int32 CurrentMinute;
+	int32 CurrentMinute = 0;
 	
 	void UpdateTime(float DeltaSeconds);
 
@@ -57,22 +58,17 @@ private:
 	TSubclassOf<class ARWAnimalBase> PigClass;
 	UPROPERTY(EditAnywhere, Category = Animal)
 	TSubclassOf<class ARWAnimalBase> FoxClass;
-	TArray<TSubclassOf<class ARWAnimalBase>> AnimalClasses;
+	TMap<EAnimalData, TSubclassOf<class ARWAnimalBase>> AnimalClassMap;
 	
 	// 현재 생성된 동물의 수와 '오늘'의 최대 수를 Map으로 저장
-	// Map<동물 클래스, Int>
-	TMap<TSubclassOf<class ARWAnimalBase>, int32> AnimalMaxNumMap;
-	TMap<TSubclassOf<class ARWAnimalBase>, int32> AnimalCurrentNumMap;
+	// Map<동물 클래스, <Max, Current>>
+	TMap<EAnimalData, TArray<int32>> AnimalNumMap;
 	
-
 	// 날짜 변경 시 변경된 동물의 수에 맞게 스폰
 	void DayChangeSpawnAnimals();
-	
+
+	UFUNCTION()
 	void UpdateMaxWolfNum();
 
-	
-public:
-	// 사냥 시 현재 수를 줄여줌
-	void DecreaseCurrentAnimalNum(class ARWAnimalBase*);
 };
 

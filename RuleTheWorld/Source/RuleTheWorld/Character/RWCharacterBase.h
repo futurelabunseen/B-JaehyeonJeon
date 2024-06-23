@@ -7,13 +7,15 @@
 #include "Interface/RWAnimationAttackInterface.h"
 #include "Interface/RWCharacterWidgetInterface.h"
 #include "Interface/RWShelterCollisionInterface.h"
-#include "RWEnums.h" // Enum Type 모음
+#include "Interface/RWCharacterStateInterface.h"
 #include "Interface/RWCollisionedItemInterface.h"
 #include "RWCharacterBase.generated.h"
 
 
 UCLASS()
-class RULETHEWORLD_API ARWCharacterBase : public ACharacter, public IRWAnimationAttackInterface, public IRWCharacterWidgetInterface, public IRWShelterCollisionInterface, public IRWCollisionedItemInterface
+class RULETHEWORLD_API ARWCharacterBase : public ACharacter, public IRWAnimationAttackInterface,
+							public IRWCharacterWidgetInterface, public IRWShelterCollisionInterface,
+							public IRWCollisionedItemInterface, public IRWCharacterStateInterface
 {
 	GENERATED_BODY()
 
@@ -24,7 +26,11 @@ public:
 	virtual void PostInitializeComponents() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+// CharacterState Interface
 	ECharacterState CharacterState;
+	virtual ECharacterState GetCharacterState() override;
+	virtual void SetCharacterState(ECharacterState NewState) override;
+
 // Bounding Box
 protected:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
@@ -47,7 +53,7 @@ public:
 
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
-	TObjectPtr<class APawn> CollisionedPawn;
+	TObjectPtr<APawn> CollisionedPawn;
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "BoundingBox")
 	uint8 bIsAnimalInBound:1;
 

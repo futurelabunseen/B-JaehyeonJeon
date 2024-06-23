@@ -71,6 +71,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
 	TObjectPtr<class USoundWave> FireSound;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Niagara)
+	TObjectPtr<class UNiagaraSystem> NiagaraEffect;
 
 
 	// 총탄 및 장전
@@ -119,7 +122,7 @@ private:
 	void ServerRPCPerformLineTrace(FVector CameraTraceStart, FVector CameraTraceEnd);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void NetMulticastRPCShootFire();
+	void NetMulticastRPCShootFire(FHitResult RifleHitResult, FHitResult CameraHitResult);
 };
 
 

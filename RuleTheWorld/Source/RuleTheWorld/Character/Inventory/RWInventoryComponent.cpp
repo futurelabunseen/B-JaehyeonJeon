@@ -33,13 +33,13 @@ URWInventoryComponent::URWInventoryComponent()
 
 	// ItemData Map
 	SetItemDataAssetMap();
-	
-	SetIsReplicated(true);
 }
 
 void URWInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	SetIsReplicated(true);
 	
 	BindAction();
 	InitializeInterface();

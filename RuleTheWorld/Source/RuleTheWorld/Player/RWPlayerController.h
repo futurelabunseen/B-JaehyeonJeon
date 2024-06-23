@@ -22,8 +22,6 @@ public:
 	
 	virtual void SetupInputComponent() override;
 
-	virtual void OnPossess();
-
 	virtual void PostNetInit() override;
 
 // Character

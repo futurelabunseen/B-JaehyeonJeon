@@ -13,8 +13,6 @@ UCLASS()
 class RULETHEWORLD_API ARWAnimalFox : public ARWAnimalBase
 {
 	GENERATED_BODY()
-
 public:
 	ARWAnimalFox();
-	
 };

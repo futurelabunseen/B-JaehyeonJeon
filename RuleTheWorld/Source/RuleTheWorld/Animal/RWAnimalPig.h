@@ -16,5 +16,6 @@ class RULETHEWORLD_API ARWAnimalPig : public ARWAnimalBase
 
 public:
 	ARWAnimalPig();
+
 	
 };

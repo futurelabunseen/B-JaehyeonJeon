@@ -9,10 +9,10 @@
 #include "Blueprint/UserWidget.h"
 #include "Engine/DamageEvents.h"
 #include "GameFramework/Character.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "Interface/RWRifleActionInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "NiagaraFunctionLibrary.h"
 
 constexpr uint8 INITIAL_BULLET = 100;
 constexpr float FIRE_RANGE = 10000.0f; // 발사 거리
@@ -98,6 +98,11 @@ void URWRifleComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 void URWRifleComponent::Reload()
 {
+	if(!bIsReadyToShoot) // 총을 들고 있지 않은 경우
+	{
+		return;
+	}
+	
 	if(LoadedBullet > 0 || BulletNum < LOADED_BULLET_NUM) //  
 	{
 		return;
@@ -112,7 +117,7 @@ void URWRifleComponent::ServerRPCReload_Implementation()
 	BulletNum = FMath::Clamp(BulletNum - LOADED_BULLET_NUM, 0, 100);
 	LoadedBullet = LOADED_BULLET_NUM;
 	UE_LOG(LogTemp, Log, TEXT("%d %d"), BulletNum, LoadedBullet);
-	NetMulticastRPCReload_Implementation();
+	NetMulticastRPCReload();
 }
 
 void URWRifleComponent::NetMulticastRPCReload_Implementation()
@@ -146,7 +151,7 @@ void URWRifleComponent::BindAction()
 	}
 }
 
-void URWRifleComponent::NetMulticastRPCShootFire_Implementation()
+void URWRifleComponent::NetMulticastRPCShootFire_Implementation(FHitResult CameraHitResult, FHitResult RifleHitResult)
 {
 	OwnerPlayer->PlayAnimMontage(RifleFireMontage, 3);
 	
@@ -154,53 +159,68 @@ void URWRifleComponent::NetMulticastRPCShootFire_Implementation()
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, FireSound, OwnerPlayer->GetActorLocation());
 	}
+
+	// Rifle HitResult로 하는게 엄밀히 맞지만.... 현재 구조로는 Rifle HitResult가 존재하는 경우는 CameraHitResult와 같다.
+	// 추후 수정이 필요할 듯
+	if (CameraHitResult.bBlockingHit) 
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraEffect, CameraHitResult.Location, FRotator::ZeroRotator);
+		UE_LOG(LogTemp, Log, TEXT("%f, %f, %f"), CameraHitResult.Location.X, CameraHitResult.Location.Y, CameraHitResult.Location.Z);
+	}
+
+	
+	// 동물이 맞은 경우 점프
+	ARWAnimalBase* HitAnimal = Cast<ARWAnimalBase>(RifleHitResult.GetActor());
+	if(HitAnimal)
+	{
+		HitAnimal->Jump();
+	}
+				
 }
 
 void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(FVector CameraTraceStart, FVector CameraTraceEnd)
 {
 	
-
-	FHitResult HitResult;
+	FHitResult CameraHitResult;
+	FHitResult RifleHitResult;
+	
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(OwnerPlayer);
 	
 	// 라인 트레이스 수행
-	bool bHitFirst = GetWorld()->LineTraceSingleByChannel(HitResult, CameraTraceStart, CameraTraceEnd, ECC_Visibility, Params);
+	bool bHitRifle = GetWorld()->LineTraceSingleByChannel(CameraHitResult, CameraTraceStart, CameraTraceEnd, ECC_Visibility, Params);
 	DrawDebugLine(GetWorld(), CameraTraceStart, CameraTraceEnd, FColor::Blue, false, 1, 0, 1);
 	
-	if (bHitFirst)
+	if (bHitRifle)
 	{
 		// 히트 결과 처리
-		AActor* HitActor = HitResult.GetActor();
+		AActor* HitActor = CameraHitResult.GetActor();
 		if (HitActor)
 		{
-			// 히트된 액터에 데미지 적용
-			//UGameplayStatics::ApplyPointDamage(HitActor, BulletDamage, Rotation.Vector(), HitResult, Owner->GetInstigatorController(), Owner, nullptr);
-
 			// 디버그 라인 그리기 (옵션)
-			DrawDebugLine(GetWorld(), CameraTraceStart, HitResult.ImpactPoint, FColor::Red, false, 1, 0, 1);
-			DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 10, FColor::Red, false, 1);
+			DrawDebugLine(GetWorld(), CameraTraceStart, CameraHitResult.ImpactPoint, FColor::Red, false, 1, 0, 1);
+			DrawDebugPoint(GetWorld(), CameraHitResult.ImpactPoint, 10, FColor::Red, false, 1);
 
-
-			
 			// Second LineTrace (Start : Player Rifle)
 			// 첫 번째 LineTrace의 피격 지점에 총신으로부터 다시 라인트레이스를 통해 진짜 맞았는지 확인
 			FVector RifleTraceStart = RifleActionInterface->GetFireStartLocation();
-			FVector RifleTraceEnd = HitResult.ImpactPoint; // 피격 당한 곳
+			FVector RifleTraceEnd = CameraHitResult.ImpactPoint; // 피격 당한 곳
 
-			bool bHitSecond = GetWorld()->LineTraceSingleByChannel(HitResult, RifleTraceStart, RifleTraceEnd, ECC_Pawn, Params);
+			
+			bool bHitSecond = GetWorld()->LineTraceSingleByChannel(RifleHitResult, RifleTraceStart, RifleTraceEnd, ECC_Pawn, Params);
 			if(bHitSecond)
 			{
-				HitActor = HitResult.GetActor();
+				HitActor = RifleHitResult.GetActor();
 				if (HitActor)
 				{
 					// 여기서 데미지 처리
 				}
 
-				DrawDebugLine(GetWorld(), RifleTraceStart, HitResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
-				DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 10, FColor::Green, false, 1);
+				/*DrawDebugLine(GetWorld(), RifleTraceStart, RifleHitResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
+				DrawDebugPoint(GetWorld(), RifleHitResult.ImpactPoint, 10, FColor::Green, false, 1);
+				*/
 
-				UE_LOG(LogTemp,Log, TEXT("Hit Result : %s"), *HitResult.GetActor()->GetName());
+				UE_LOG(LogTemp,Log, TEXT("Hit Result : %s"), *RifleHitResult.GetActor()->GetName());
 
 				ACharacter* HitCharacter = Cast<ACharacter>(HitActor);
 				if(HitCharacter)
@@ -209,13 +229,8 @@ void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(FVector CameraT
 					FDamageEvent DamageEvent;
 					HitCharacter->TakeDamage(AttackDamage, DamageEvent, OwnerPlayer->GetController(), OwnerPlayer);
 				}
-
-				// 동물이 맞은 경우 점프
-				ARWAnimalBase* HitAnimal = Cast<ARWAnimalBase>(HitActor);
-				if(HitAnimal)
-				{
-					HitAnimal->NetMulticastOnHitJump();
-				}
+				
+				
 			}
 		}
 	}
@@ -227,15 +242,17 @@ void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(FVector CameraT
 
 
 	// 총격 애니메이션 및 효과
-	NetMulticastRPCShootFire();
+	NetMulticastRPCShootFire(CameraHitResult, RifleHitResult);
 }
 
 void URWRifleComponent::SetReady()
 {
-	if(bIsReadyToShoot)
+	if(bIsReadyToShoot) 
 	{
+		// 준비 취소
 		
 		bIsReadyToShoot = false;
+		bIsAiming = false;
 		ServerRPCAbortReady();
 		// 카메라 원래 위치로
 		RifleActionInterface->StopAiming();
@@ -322,14 +339,6 @@ void URWRifleComponent::ServerRPCCompleteAiming_Implementation()
 void URWRifleComponent::NetMulticastRPCSetAiming_Implementation(uint8 _bIsAiming)
 {
 	SetAnimAiming(_bIsAiming);
-	if(_bIsAiming)
-	{
-		OwnerPlayer->GetCharacterMovement()->SetMovementMode(MOVE_None);
-	}
-	else
-	{
-		OwnerPlayer->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-	}
 }
 
 void URWRifleComponent::Fire()
@@ -390,11 +399,20 @@ void URWRifleComponent::NetMulticastRPCAnimReadyToShoot_Implementation(uint8 _bI
 void URWRifleComponent::SetAnimReadyToShoot(uint8 _bIsReadyForShoot)
 {
 	RifleActionInterface->GetAnimInstance()->bIsRifleSet = _bIsReadyForShoot;
+
+	if(!_bIsReadyForShoot) // Ready를 푸는 상황에서 Aiming이 되어있다면 해제
+	{
+		RifleActionInterface->GetAnimInstance()->bIsAiming = false;
+	}
 }
 
 void URWRifleComponent::SetAnimAiming(uint8 _bIsAiming)
 {
-	RifleActionInterface->GetAnimInstance()->bIsAiming = _bIsAiming;
+	URWAnimInstance* RWAnimInstance = RifleActionInterface->GetAnimInstance();
+	if(RWAnimInstance)
+	{
+		RWAnimInstance->bIsAiming = _bIsAiming;
+	}
 }
 
 

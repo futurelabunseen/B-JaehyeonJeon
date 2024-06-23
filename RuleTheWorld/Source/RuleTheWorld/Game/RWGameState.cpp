@@ -3,6 +3,7 @@
 
 #include "Game/RWGameState.h"
 
+#include "UI/RWEventWidget.h"
 #include "Components/AudioComponent.h"
 #include "Net/UnrealNetwork.h"
 
@@ -31,7 +32,16 @@ ARWGameState::ARWGameState()
 void ARWGameState::BeginPlay()
 {
 	Super::BeginPlay();
-	PlaySound(DayBGM);
+	
+	// Set Widget 
+	EventWidgetInstancing();
+	EventWidgetInstance->AddToViewport();
+
+
+	
+	
+	// Start : Day
+	SetDayEvent();
 }
 
 void ARWGameState::Tick(float DeltaSeconds)
@@ -56,13 +66,11 @@ void ARWGameState::CalcTimeVariable()
 
 	if(CurrentTime == 120.f) // 06:00 DaySound
 	{
-		PlaySound(DayBGM);
-		UE_LOG(LogTemp, Log, TEXT("PlayMusic"));
+		
 	}
 	else if(CurrentTime == 360.f) // 18:00 Night Sound
 	{
-		PlaySound(NightBGM);
-		UE_LOG(LogTemp, Log, TEXT("PlayMusic"));
+		
 	}
 }
 
@@ -97,6 +105,60 @@ void ARWGameState::PlaySound(USoundWave* SoundWave)
 	AudioComponent->Stop();
 	AudioComponent->SetSound(SoundWave);
 	AudioComponent->Play();
+}
+
+void ARWGameState::EventWidgetInstancing()
+{
+	if (EventWidgetClass != nullptr)
+	{
+		EventWidgetInstance = CreateWidget<URWEventWidget>(this->GetWorld(), EventWidgetClass);
+		EventWidgetInstance->SetDayEventImagVisible(false);
+		EventWidgetInstance->SetNightEventImagVisible(false);	
+	}
+} 
+
+void ARWGameState::SetDayEvent()
+{
+	PlaySound(DayBGM);
+	if(EventWidgetInstance)
+	{
+		EventWidgetInstance->SetDayEventImagVisible(true);
+		EventWidgetInstance->SetNightEventImagVisible(false);
+	}
+
+	// 3초 뒤에 사라지도록 
+	FTimerHandle TimerHandle;
+	FTimerDelegate TimerDelegate;
+	TimerDelegate.BindUFunction(EventWidgetInstance, FName("SetDayEventImagVisible"), false);
+
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle,
+		TimerDelegate,
+		3.0f,
+		false
+	);
+}
+
+void ARWGameState::SetNightEvent()
+{
+	PlaySound(NightBGM);
+	if(EventWidgetInstance)
+	{
+		EventWidgetInstance->SetNightEventImagVisible(true);
+		EventWidgetInstance->SetDayEventImagVisible(false);
+	}
+
+	// 3초 뒤에 사라지도록
+	FTimerHandle TimerHandle;
+	FTimerDelegate TimerDelegate;
+	TimerDelegate.BindUFunction(this, FName("SetNightEventImagVisible"), false);
+
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle,
+		TimerDelegate,
+		3.0f,
+		false
+	);
 }
 
 

@@ -27,7 +27,7 @@ ARWCharacterPlayer::ARWCharacterPlayer()
 	// Spring Arm
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 700.f;
+	CameraBoom->TargetArmLength = 550.f;
 	CameraBoom->bUsePawnControlRotation = true;
 
 	// Camera
@@ -46,7 +46,7 @@ ARWCharacterPlayer::ARWCharacterPlayer()
 	MiniMapSceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("MiniMapSceneCaptrue"));
 	MiniMapSceneCapture->SetupAttachment(MiniMapSpringArm, USpringArmComponent::SocketName);
 	MiniMapSceneCapture->ProjectionType = ECameraProjectionMode::Orthographic;
-
+	
 	// Rifle
 	RifleComponent = CreateDefaultSubobject<URWRifleComponent>(TEXT("Rifle"));
 	RifleMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("RifleSkeletalMesh"));
@@ -54,7 +54,7 @@ ARWCharacterPlayer::ARWCharacterPlayer()
 	// Rile Camera Move
 	CameraTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("CameraTimeline"));
 	DefaultCameraLocation = FVector(0.0f, 0.0f, 0.0f);
-	AimingCameraLocation = FVector(570.0f, 50.0f, 60.0f);
+	AimingCameraLocation = FVector(430.0f, 60.0f, 60.0f);
 }
 
 
@@ -63,10 +63,19 @@ void ARWCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 미니맵에 사용 할 Canvas Render Target을 설정
-	// 각 Client마다 생성된 이후에 지정해주어야 하기 때문에, BeginPlay에서 지정
-	UCanvasRenderTarget2D* MinimapCanvasRenderTarget = UCanvasRenderTarget2D::CreateCanvasRenderTarget2D(GetWorld(), UCanvasRenderTarget2D::StaticClass(), 1024, 1024);
-	MiniMapSceneCapture->TextureTarget = MinimapCanvasRenderTarget;
+
+	if(IsLocallyControlled())
+	{
+		// 미니맵에 사용 할 Canvas Render Target을 설정
+		// 각 Client마다 생성된 이후에 지정해주어야 하기 때문에, BeginPlay에서 지정
+		UCanvasRenderTarget2D* MinimapCanvasRenderTarget = UCanvasRenderTarget2D::CreateCanvasRenderTarget2D(GetWorld(), UCanvasRenderTarget2D::StaticClass(), 1024, 1024);
+		MiniMapSceneCapture->TextureTarget = MinimapCanvasRenderTarget;
+	
+	}
+	else
+	{
+		MiniMapSceneCapture->SetActive(false);
+	}
 	
 	// Get AnimInstance
 	AnimInstance = Cast<URWAnimInstance>(GetMesh()->GetAnimInstance());

@@ -11,7 +11,7 @@ ARWShelter::ARWShelter()
 {
 	// Set CollisionBox
 	ShelterCollisionSphere = CreateDefaultSubobject<USphereComponent>("ShelterCollisionSphere");
-	ShelterCollisionSphere->InitSphereRadius(1000.f);
+	ShelterCollisionSphere->InitSphereRadius(4000.f);
 	ShelterCollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	ShelterCollisionSphere->SetCollisionResponseToAllChannels(ECR_Overlap);
 	// Set Overlap Delegate

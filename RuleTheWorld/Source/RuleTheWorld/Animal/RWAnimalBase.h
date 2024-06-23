@@ -5,7 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Interface/RWAnimationAttackInterface.h"
+#include "RWEnums.h"
 #include "RWAnimalBase.generated.h"
+
 
 UCLASS()
 class RULETHEWORLD_API ARWAnimalBase : public ACharacter, public IRWAnimationAttackInterface
@@ -21,6 +23,10 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void PostInitializeComponents() override;
+
+	EAnimalState AnimalState;
+
+	EAnimalData AnimalData= EAnimalData::None;
 
 public:
 	UFUNCTION(BlueprintCallable)
@@ -41,16 +47,21 @@ protected:
 
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
-	// Dead
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat, Meta = (AllowPrivateAccess = "true"))
+// Dead & Respawn
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Dead, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAnimMontage> DeadMontage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Respawn, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UAnimMontage> IdleMontage;
+
 	UFUNCTION(NetMulticast, Reliable)
 	void NetMulticastRPCSetDead();
 
 	void SetDead();
 
-//Using Rifle Section 
-public:
+	void ActivateAnimal();
+	void DeactivateAnimal();
+
 	UFUNCTION(NetMulticast, Reliable)
-	void NetMulticastOnHitJump();
+	void NetMultiCastRPCActivateAnimal();
 };
