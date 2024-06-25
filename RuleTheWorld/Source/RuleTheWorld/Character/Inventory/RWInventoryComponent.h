@@ -59,6 +59,10 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category =  Input, Meta = (AllowPrivateAccess = "True"))
 	TObjectPtr<class UInputAction> PickUpAction;
+
+	UPROPERTY(Replicated)
+	uint8 bIsProcessingPickUp:1;
+	void OnPickUpComplete();
 	
 	void PickUp();
 	UFUNCTION(Server, WithValidation, Reliable)

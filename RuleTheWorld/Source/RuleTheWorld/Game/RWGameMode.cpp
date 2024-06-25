@@ -11,9 +11,10 @@
 #include "GameFramework/PlayerState.h"
 #include "Player/RWPlayerController.h"
 
-constexpr float START_TIME = 0.f; // Game Start 06:00  120
+constexpr float START_TIME = 120.f; // Game Start 06:00  120
 constexpr float ONE_DAY = 480.f; // 8min(Real Time) = 1Day / 1min = 3Hours / 20sec = 1Hour
 constexpr int ONE_HOUR = 20;
+constexpr int WOLF_INCREASE_BY_DAY = 5;
 
 ARWGameMode::ARWGameMode()
 {
@@ -76,19 +77,10 @@ ARWGameMode::ARWGameMode()
 
 	// Animal
 	// Set Initial Value
-	AnimalNumMap.Add(EAnimalData::Wolf, {3, 0});
-	AnimalNumMap.Add(EAnimalData::Pig, {10, 0});
-	AnimalNumMap.Add(EAnimalData::Fox, {1, 0});
-	/*
-	 새로운 Map으로 교체
-	AnimalMaxNumMap.Add(WolfClass, 3);
-	AnimalMaxNumMap.Add(PigClass, 10);
-	AnimalMaxNumMap.Add(FoxClass, 1);
+	AnimalNumMap.Add(EAnimalData::Wolf, {10, 0});
+	AnimalNumMap.Add(EAnimalData::Pig, {20, 0});
+	AnimalNumMap.Add(EAnimalData::Fox, {2, 0});
 
-	AnimalCurrentNumMap.Add(WolfClass, 0);
-	AnimalCurrentNumMap.Add(PigClass, 0);
-	AnimalCurrentNumMap.Add(FoxClass, 0);
-	*/
 }
 
 void ARWGameMode::BeginPlay()
@@ -116,6 +108,16 @@ void ARWGameMode::UpdateTime(float DeltaSeconds)
 	{
 		DayChange();
 		UE_LOG(LogTemp, Log, TEXT("Game State - Day : %d CurrentTime : %f ProgressPercent : %f"), DayScore, CurrentTime, DayProgressPercent);
+	}
+	else if (CurrentTime >= 120.f && CurrentTime < 121.f)
+	{
+		DayChangeSpawnAnimals(); // 늑대 제외 동물 스폰
+		OnTimeReachedMorning.Broadcast(); // 아침이 되었음을 알림
+	}
+	else if (CurrentTime >= 360.f && CurrentTime < 361.f)
+	{
+		NightWolfSpawn(); // 늑대 스폰
+		OnTimeReachedNight.Broadcast(); // 저녁이 되었음을 알림
 	}
 	
 	// 하루가 얼마나 지났는지 퍼센트로 표시
@@ -149,7 +151,6 @@ void ARWGameMode::DayChange()
 	GameState->SetDayScore(DayScore);
 	// Spawn Animal
 	UpdateMaxWolfNum();
-	DayChangeSpawnAnimals();
 }
 
 // 분리
@@ -158,7 +159,8 @@ void ARWGameMode::DayChangeSpawnAnimals()
 	for(auto& AnimalClass : AnimalClassMap)
 	{
 		EAnimalData AnimalData = AnimalClass.Key;
-		// Map 순회 , 하나의 Map
+		if(AnimalData == EAnimalData::Wolf) continue; // 늑대는 타 함수에서 생성
+		
 		for(int i = 0; i < AnimalNumMap[AnimalData][0] - AnimalNumMap[AnimalData][1]; i++) // 최대 - 현재로 스폰할 동물의 수 지정
 		{
 			// 현재 시간을 기반으로 시드 생성
@@ -168,7 +170,7 @@ void ARWGameMode::DayChangeSpawnAnimals()
 			FRandomStream RandomStream;
 			RandomStream.Initialize(CurrentRealTime);
 			
-			FVector SpawnLocation = FVector(100.0f + RandomStream.FRandRange(-10000.f, 10000.f), 100.0f + RandomStream.FRandRange(-10000.f, 10000.f), 1000.0f  + RandomStream.FRandRange(0.f, 100.f));
+			FVector SpawnLocation = FVector(100.0f + RandomStream.FRandRange(-5000.f, 5000.f), 100.0f + RandomStream.FRandRange(-5000.f, 5000.f), RandomStream.FRandRange(0.f, 100.f));
 			FRotator SpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
 			
 			GetWorld()->SpawnActor<ACharacter>(AnimalClass.Value, SpawnLocation, SpawnRotation);
@@ -179,11 +181,45 @@ void ARWGameMode::DayChangeSpawnAnimals()
 			UE_LOG(LogTemp, Log, TEXT("GameMode : Spawn %s"), *AnimalClass.Value->GetName());
 		}
 	}
-	
 }
 
-void ARWGameMode::UpdateMaxWolfNum()
+void ARWGameMode::NightWolfSpawn()
 {
-	// 구현 필요
+	EAnimalData AnimalData = EAnimalData::Wolf;
+	// Map 순회 , 하나의 Map  
+	for(int i = 0; i < AnimalNumMap[AnimalData][0] - AnimalNumMap[AnimalData][1]; i++) // 최대 - 현재로 스폰할 동물의 수 지정
+	{
+		// 현재 시간을 기반으로 시드 생성
+		int32 CurrentRealTime = FDateTime::Now().GetMillisecond();
+
+		// RandomStream 인스턴스 생성 및 난수 생성
+		FRandomStream RandomStream;
+		RandomStream.Initialize(CurrentRealTime);
+			
+		FVector SpawnLocation = FVector(100.0f + RandomStream.FRandRange(-5000.f, 5000.f), 100.0f + RandomStream.FRandRange(-5000.f, 5000.f), 1000.0f  + RandomStream.FRandRange(0.f, 100.f));
+		FRotator SpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
+			
+		GetWorld()->SpawnActor<ACharacter>(WolfClass, SpawnLocation, SpawnRotation);
+			
+		AnimalNumMap[AnimalData][1]++;
+			
+		UE_LOG(LogTemp, Log, TEXT("스폰 위치  :  %f %f %f"), SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
+		UE_LOG(LogTemp, Log, TEXT("GameMode : Spawn %s"), *WolfClass->GetName());
+	}
+}
+
+void ARWGameMode::UpdateMaxWolfNum() // 매일 스폰되는 늑대의 최대 수를 증가시킴
+{
+	AnimalNumMap[EAnimalData::Wolf][0] += WOLF_INCREASE_BY_DAY;
+}
+
+FOnTimeReached& ARWGameMode::GetOnTimeReachedMorning()
+{
+	return OnTimeReachedMorning;
+}
+
+FOnTimeReached& ARWGameMode::GetOnTimeReachedNight()
+{
+	return OnTimeReachedNight;
 }
 

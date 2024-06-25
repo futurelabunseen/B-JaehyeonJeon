@@ -122,7 +122,7 @@ private:
 	void ServerRPCPerformLineTrace(FVector CameraTraceStart, FVector CameraTraceEnd);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void NetMulticastRPCShootFire(FHitResult RifleHitResult, FHitResult CameraHitResult);
+	void NetMulticastRPCShootFire(FHitResult RifleHitResult);
 };
 
 

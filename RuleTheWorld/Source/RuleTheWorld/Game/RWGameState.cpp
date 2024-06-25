@@ -63,15 +63,6 @@ void ARWGameState::CalcTimeVariable()
 	DayProgressPercent = 100 * (CurrentTime / ONE_DAY_CLIENT);
 	CurrentHour = CurrentTime / ONE_HOUR_CLIENT;
 	CurrentMinute = ((60/ONE_HOUR_CLIENT) * static_cast<int32>(CurrentTime)) % 60;
-
-	if(CurrentTime == 120.f) // 06:00 DaySound
-	{
-		
-	}
-	else if(CurrentTime == 360.f) // 18:00 Night Sound
-	{
-		
-	}
 }
 
 // GameMode에서 Data를 넘겨줄 때 사용

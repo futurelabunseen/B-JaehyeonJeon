@@ -61,50 +61,87 @@ void URWInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(URWInventoryComponent, Inventory);
+	DOREPLIFETIME(URWInventoryComponent, bIsProcessingPickUp);
+	
 }
 
 void URWInventoryComponent::PickUp()
 {
-	if(CharacterInterface->GetIsItemInBound())
+	if (CharacterInterface->GetIsItemInBound())
 	{
 		ARWInteractableActor* CollisionedItem = CharacterInterface->GetCollisionedItem();
-		EItemData ItemData = CollisionedItem->ItemData;
-		ServerRPCGetItem(ItemData);
+		if (CollisionedItem)
+		{
+			EItemData ItemData = CollisionedItem->ItemData;
+			ServerRPCGetItem(ItemData);
+		}
+		else
+		{
+			OnPickUpComplete();
+		}
+	}
+	else
+	{
+		OnPickUpComplete();
 	}
 }
 
 bool URWInventoryComponent::ServerRPCGetItem_Validate(EItemData ItemData)
 {
-	// Client에서 PickUP을 요청한 Item과 서버에서 대상으로 하고있는 아이템이 같은지 확인
+	/*// Client에서 PickUp을 요청한 Item과 서버에서 대상으로 하고 있는 아이템이 같은지 확인
 	ARWInteractableActor* CollisionedItem = CharacterInterface->GetCollisionedItem();
-	if(CollisionedItem->ItemData != ItemData)
+	if (CollisionedItem->ItemData != ItemData)
 	{
-		
 		return false;
 	}
-	
+	*/
+
 	return true;
 }
 
 void URWInventoryComponent::ServerRPCGetItem_Implementation(EItemData ItemData)
 {
-	// 해당 아이템 파괴
-	if(CharacterInterface->GetIsItemInBound())
+	if(bIsProcessingPickUp)
 	{
-		
-		ARWInteractableActor* CollisionedItem = CharacterInterface->GetCollisionedItem();
-		CollisionedItem->Destroy();
+		UE_LOG(LogTemp, Log, TEXT("픽업 거부됨"));
+		return;
 	}
-	// 동일 아이템이 있는 위치를 찾고 수 증가
-	int32 ItemIndex = GetItemIndex(ItemData);
 
-	// None인 자리에 새로 아이템을 넣는 경우에 새로 입력받은 Item Data를 넣어줌
-	if(Inventory.InventoryItemSubjects[ItemIndex] == EItemData::None)
+	
+	bIsProcessingPickUp = true;
+	if (CharacterInterface->GetIsItemInBound())
 	{
-		Inventory.InventoryItemSubjects[ItemIndex] = ItemData;
+		// 해당 아이템 파괴
+		ARWInteractableActor* CollisionedItem = CharacterInterface->GetCollisionedItem();
+		if (CollisionedItem)
+		{
+			// Client에서 PickUp을 요청한 Item과 서버에서 대상으로 하고 있는 아이템이 같은지 확인
+			if (CollisionedItem->ItemData != ItemData) 
+			{
+				return ;
+			}
+			
+			UE_LOG(LogTemp, Log, TEXT("인벤토리에 넣어서 삭제됨"));
+			CollisionedItem->Destroy();
+        
+			// 동일 아이템이 있는 위치를 찾고 수 증가
+			int32 ItemIndex = GetItemIndex(ItemData);
+			
+			// None인 자리에 새로 아이템을 넣는 경우에 새로 입력받은 Item Data를 넣어줌
+			if (Inventory.InventoryItemSubjects[ItemIndex] == EItemData::None)
+			{
+				Inventory.InventoryItemSubjects[ItemIndex] = ItemData;
+			}
+			// 해당 Index의 값 증가 
+			AddInventoryItemNums(ItemIndex);
+		}
 	}
-	//해당 Index의 값 증가 
-	AddInventoryItemNums(ItemIndex);
+	OnPickUpComplete();
+}
+
+void URWInventoryComponent::OnPickUpComplete()
+{
+	bIsProcessingPickUp = false;
 }
 
 void URWInventoryComponent::UseItem()
@@ -251,7 +288,7 @@ void URWInventoryComponent::OnRep_CopiedInventoryToWidget()
 
 void URWInventoryComponent::SetUpInventoryWidget(URWInventoryWidget* InventoryWidget)
 {
-	// Delegate 등록;
+	// Delegate 등록
 	OnRepInventory.AddUObject(InventoryWidget, &URWInventoryWidget::InventoryCopy);
 }
 

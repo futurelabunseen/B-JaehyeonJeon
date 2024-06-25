@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "RWEnums.h"
 #include "GameFramework/GameModeBase.h"
+#include "Interface/RWTimeReachedInterface.h"
 #include "RWGameMode.generated.h"
-
 /**
  * 
  */
 UCLASS()
-class RULETHEWORLD_API ARWGameMode : public AGameModeBase
+class RULETHEWORLD_API ARWGameMode : public AGameModeBase, public IRWTimeReachedInterface
 {
 	GENERATED_BODY()
 
@@ -67,8 +67,18 @@ private:
 	// 날짜 변경 시 변경된 동물의 수에 맞게 스폰
 	void DayChangeSpawnAnimals();
 
+	// 밤이 되었을 때, 일정 주기로 늑대를 스폰
+	void NightWolfSpawn();
+
 	UFUNCTION()
 	void UpdateMaxWolfNum();
+public:
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnTimeReached OnTimeReachedMorning; // 낮이 되었음을 알리는 Delegate
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnTimeReached OnTimeReachedNight; // 방이 되었음을 알리는 Delegate
 
+	virtual FOnTimeReached& GetOnTimeReachedMorning() override;
+	virtual FOnTimeReached& GetOnTimeReachedNight() override; 
 };
 

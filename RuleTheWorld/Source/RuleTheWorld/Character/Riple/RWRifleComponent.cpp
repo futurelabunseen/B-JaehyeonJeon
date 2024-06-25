@@ -151,7 +151,7 @@ void URWRifleComponent::BindAction()
 	}
 }
 
-void URWRifleComponent::NetMulticastRPCShootFire_Implementation(FHitResult CameraHitResult, FHitResult RifleHitResult)
+void URWRifleComponent::NetMulticastRPCShootFire_Implementation(FHitResult RifleHitResult)
 {
 	OwnerPlayer->PlayAnimMontage(RifleFireMontage, 3);
 	
@@ -160,14 +160,12 @@ void URWRifleComponent::NetMulticastRPCShootFire_Implementation(FHitResult Camer
 		UGameplayStatics::PlaySoundAtLocation(this, FireSound, OwnerPlayer->GetActorLocation());
 	}
 
-	// Rifle HitResult로 하는게 엄밀히 맞지만.... 현재 구조로는 Rifle HitResult가 존재하는 경우는 CameraHitResult와 같다.
-	// 추후 수정이 필요할 듯
-	if (CameraHitResult.bBlockingHit) 
+	// Rifle HitResult의 피격위치에 나이아가라 이펙트 생성
+	if (RifleHitResult.bBlockingHit) 
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraEffect, CameraHitResult.Location, FRotator::ZeroRotator);
-		UE_LOG(LogTemp, Log, TEXT("%f, %f, %f"), CameraHitResult.Location.X, CameraHitResult.Location.Y, CameraHitResult.Location.Z);
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraEffect, RifleHitResult.Location, FRotator::ZeroRotator);
+		UE_LOG(LogTemp, Log, TEXT("Rifle : %f, %f, %f"), RifleHitResult.Location.X, RifleHitResult.Location.Y, RifleHitResult.Location.Z);
 	}
-
 	
 	// 동물이 맞은 경우 점프
 	ARWAnimalBase* HitAnimal = Cast<ARWAnimalBase>(RifleHitResult.GetActor());
@@ -189,7 +187,7 @@ void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(FVector CameraT
 	
 	// 라인 트레이스 수행
 	bool bHitRifle = GetWorld()->LineTraceSingleByChannel(CameraHitResult, CameraTraceStart, CameraTraceEnd, ECC_Visibility, Params);
-	DrawDebugLine(GetWorld(), CameraTraceStart, CameraTraceEnd, FColor::Blue, false, 1, 0, 1);
+	//DrawDebugLine(GetWorld(), CameraTraceStart, CameraTraceEnd, FColor::Blue, false, 1, 0, 1);
 	
 	if (bHitRifle)
 	{
@@ -197,29 +195,20 @@ void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(FVector CameraT
 		AActor* HitActor = CameraHitResult.GetActor();
 		if (HitActor)
 		{
-			// 디버그 라인 그리기 (옵션)
+			/*// 디버그 라인 그리기 (옵션)
 			DrawDebugLine(GetWorld(), CameraTraceStart, CameraHitResult.ImpactPoint, FColor::Red, false, 1, 0, 1);
 			DrawDebugPoint(GetWorld(), CameraHitResult.ImpactPoint, 10, FColor::Red, false, 1);
+			*/
 
 			// Second LineTrace (Start : Player Rifle)
 			// 첫 번째 LineTrace의 피격 지점에 총신으로부터 다시 라인트레이스를 통해 진짜 맞았는지 확인
 			FVector RifleTraceStart = RifleActionInterface->GetFireStartLocation();
 			FVector RifleTraceEnd = CameraHitResult.ImpactPoint; // 피격 당한 곳
-
 			
-			bool bHitSecond = GetWorld()->LineTraceSingleByChannel(RifleHitResult, RifleTraceStart, RifleTraceEnd, ECC_Pawn, Params);
+			bool bHitSecond = GetWorld()->LineTraceSingleByChannel(RifleHitResult, RifleTraceStart, RifleTraceEnd, ECC_PhysicsBody, Params);
 			if(bHitSecond)
 			{
 				HitActor = RifleHitResult.GetActor();
-				if (HitActor)
-				{
-					// 여기서 데미지 처리
-				}
-
-				/*DrawDebugLine(GetWorld(), RifleTraceStart, RifleHitResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
-				DrawDebugPoint(GetWorld(), RifleHitResult.ImpactPoint, 10, FColor::Green, false, 1);
-				*/
-
 				UE_LOG(LogTemp,Log, TEXT("Hit Result : %s"), *RifleHitResult.GetActor()->GetName());
 
 				ACharacter* HitCharacter = Cast<ACharacter>(HitActor);
@@ -229,20 +218,16 @@ void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(FVector CameraT
 					FDamageEvent DamageEvent;
 					HitCharacter->TakeDamage(AttackDamage, DamageEvent, OwnerPlayer->GetController(), OwnerPlayer);
 				}
-				
+			}
+			else
+			{
 				
 			}
 		}
 	}
-	else
-	{
-		// 디버그 라인 그리기 (옵션)
-		DrawDebugLine(GetWorld(), CameraTraceStart, CameraTraceEnd, FColor::Blue, false, 1, 0, 1);
-	}
-
-
+	
 	// 총격 애니메이션 및 효과
-	NetMulticastRPCShootFire(CameraHitResult, RifleHitResult);
+	NetMulticastRPCShootFire(RifleHitResult);
 }
 
 void URWRifleComponent::SetReady()
@@ -348,25 +333,26 @@ void URWRifleComponent::Fire()
 		return;
 	}
 
-	// GetViewportSize
+	// Viewport 크기 
 	int32 ViewportSizeX;
 	int32 ViewportSizeY;
 	APlayerController* OwnerController = Cast<APlayerController>(OwnerPlayer->GetController());
 	OwnerController->GetViewportSize(ViewportSizeX, ViewportSizeY);
 
-	// Get screen space location of crosshairs
+	// CrossHari의 Screen Space 좌표
 	FVector2D CrosshairLocation(ViewportSizeX / 2.f, ViewportSizeY / 2.f);
 	CrosshairLocation.Y ;
 	
 	FVector CrosshairWorldPosition;
 	FVector CrosshairWorldDirection;
 
-	// Get world position and direction of crosshairs
+	// crosshair의 위치를 바탕으로 Screen Space에서 World Space로 Deproject
 	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld
 		(UGameplayStatics::GetPlayerController(this, 0),// Player의 controller
 		CrosshairLocation,  // 2D 상의 Crosshair의 위치
-		CrosshairWorldPosition,   // 3D상의 Crosshair 계산 결과를 얻을 변수
-		CrosshairWorldDirection); // 3D상의 Crosshair 의 방향
+		CrosshairWorldPosition,   // World Space에서의 좌표
+		CrosshairWorldDirection  // World Space에서의 방향
+		); 
 
 	// First LineTrace (Start : CrossHair)
 	FVector CameraTraceStart = CrosshairWorldPosition;
@@ -375,7 +361,6 @@ void URWRifleComponent::Fire()
 
 	// 총격에 대해 서버 RPC를 보냄
 	ServerRPCPerformLineTrace(CameraTraceStart, CameraTraceEnd);
-	
 }
 
 void URWRifleComponent::NetMulticastRPCAnimReadyToShoot_Implementation(uint8 _bIsReadyToShoot)

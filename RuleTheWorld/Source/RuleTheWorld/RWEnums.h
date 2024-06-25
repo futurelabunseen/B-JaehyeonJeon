@@ -31,7 +31,6 @@ enum class EAnimalData : int8
 	Fox UMETA(DisplayName = "Fox"),
 };
 
-
 UENUM()
 enum class EItemData : int8
 {

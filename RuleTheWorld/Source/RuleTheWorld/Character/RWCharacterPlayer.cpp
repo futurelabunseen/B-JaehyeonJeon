@@ -38,7 +38,7 @@ ARWCharacterPlayer::ARWCharacterPlayer()
 	// Minimap SpringArm
 	MiniMapSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("MiniMapSpringArm"));
 	MiniMapSpringArm->SetupAttachment(RootComponent);
-	MiniMapSpringArm->TargetArmLength = 100000.0f;
+	MiniMapSpringArm->TargetArmLength = 1000.0f;
 	MiniMapSpringArm->bUsePawnControlRotation = false;
 	MiniMapSpringArm->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
 
@@ -54,7 +54,7 @@ ARWCharacterPlayer::ARWCharacterPlayer()
 	// Rile Camera Move
 	CameraTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("CameraTimeline"));
 	DefaultCameraLocation = FVector(0.0f, 0.0f, 0.0f);
-	AimingCameraLocation = FVector(430.0f, 60.0f, 60.0f);
+	AimingCameraLocation = FVector(0.0f, 60.0f, 60.0f);
 }
 
 
@@ -246,7 +246,7 @@ void ARWCharacterPlayer::HandleTimelineProgress(float Value)
 	FVector NewLocation = FMath::Lerp(DefaultCameraLocation, AimingCameraLocation, Value);
 	FollowCamera->SetRelativeLocation(NewLocation);
 
-
+	CameraBoom->TargetArmLength = FMath::Lerp(550.f, 150.f, Value);
 }
 
 void ARWCharacterPlayer::StartAiming()

@@ -24,3 +24,8 @@ ARWAnimalWolf::ARWAnimalWolf()
 	
 	AnimalData = EAnimalData::Wolf;
 }
+
+void ARWAnimalWolf::BeginPlay()
+{
+	Super::BeginPlay();
+}

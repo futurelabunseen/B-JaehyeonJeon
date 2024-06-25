@@ -84,13 +84,7 @@ void URWMainWidget::BindImageFromMinimapMaterial()
 			{
 				MinimapImage->SetBrushFromMaterial(MinimapMaterialInstance);
 				
-				// ####  원형 미니맵을 제작하고자 한 코드지만, Material을 적용하면 네모모양으로 나옴... ㅠㅠ #####
 				FSlateBrush SlateBrush = MinimapImage->GetBrush();
-				SlateBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
-				
-				SlateBrush.OutlineSettings.RoundingType = ESlateBrushRoundingType::HalfHeightRadius;
-				//	 ###################################################
-				
 				MinimapImage->SetBrush(SlateBrush);
 				bIsMinimapCompleted = true;
 			}

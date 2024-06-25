@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "RWEnums.h"
+#include "RWInteractableActor.h"
 #include "Interface/RWItemDataInterface.h"
 #include "RWItemData.generated.h"
 

@@ -16,4 +16,7 @@ class RULETHEWORLD_API ARWAnimalWolf : public ARWAnimalBase
 
 public:
 	ARWAnimalWolf();
+
+	
+	void BeginPlay() override;
 };

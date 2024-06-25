@@ -60,7 +60,7 @@ void ARWLevelScript::AddMainWidget_Implementation()
 	}
 }
 
-void ARWLevelScript::UpdateSunLightRotation_Implementation()
+void ARWLevelScript::UpdateSunLightRotation()
 {
 	// Update SunLight Rotation
 	float RotatePitch = 90 + GameState->GetClientDayProgressPercent() * DAY_PROGRESS_PERCENT_PER_MIN;

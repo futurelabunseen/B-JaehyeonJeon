@@ -21,3 +21,8 @@ ARWAnimalFox::ARWAnimalFox()
 	
 	AnimalData = EAnimalData::Fox;
 }
+
+void ARWAnimalFox::BeginPlay()
+{
+	Super::BeginPlay();
+}

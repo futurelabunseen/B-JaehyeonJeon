@@ -11,8 +11,6 @@
 
 ARWAnimalAIController::ARWAnimalAIController()
 {
-	
-
 	// AI Perception
 	AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AI Perception"));
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));

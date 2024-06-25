@@ -26,7 +26,7 @@ protected:
 
 	EAnimalState AnimalState;
 
-	EAnimalData AnimalData= EAnimalData::None;
+	EAnimalData AnimalData = EAnimalData::None;
 
 public:
 	UFUNCTION(BlueprintCallable)
@@ -59,9 +59,17 @@ protected:
 
 	void SetDead();
 
+	UFUNCTION()
 	void ActivateAnimal();
 	void DeactivateAnimal();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void NetMultiCastRPCActivateAnimal();
+
+// Spawn Meat
+public:
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Spawning")
+	TSubclassOf<class ARWInteractableActor> MeatItemClass;
+	
+	void SpawnMeat();
 };

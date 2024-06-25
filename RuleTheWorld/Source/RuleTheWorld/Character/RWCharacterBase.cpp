@@ -107,6 +107,9 @@ void ARWCharacterBase::PostInitializeComponents()
 	StatComponent->OnHPZero.AddUObject(this, &ARWCharacterBase::SetDead);
 	// Hungry가 Max가 되면 Staring으로 변경 -> -> Delegate로 Stat Component와 연결
 	StatComponent->OnStarving.AddUObject(this, &ARWCharacterBase::SetStarving);
+
+
+	UE_LOG(LogTemp, Log, TEXT("로그 : 플레이어 생성"));
 }
 
 void ARWCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -230,6 +233,7 @@ void ARWCharacterBase::AttackHitCheck()
 		OutHitResult.GetActor()->TakeDamage(AttackDamage, DamageEvent, GetController(), this);
 	}
 
+/*
 #if ENABLE_DRAW_DEBUG
 
 	FVector CapsuleOrigin = Start + (End - Start) * 0.5f;
@@ -239,6 +243,8 @@ void ARWCharacterBase::AttackHitCheck()
 	DrawDebugCapsule(GetWorld(), CapsuleOrigin, CapsuleHalfHeight, AttackRadius, FRotationMatrix::MakeFromZ(GetActorForwardVector()).ToQuat(), DrawColor, false, 5.0f);
 
 #endif
+*/
+	
 }
 
 float ARWCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator,
@@ -309,8 +315,10 @@ void ARWCharacterBase::SetupShelterExit()
 {
 	bIsInShelter = false;
 	NiagaraEffectFire->SetVisibility(true);
-
-	ApplyFireDamageOverTime();
+	if(HasAuthority())
+	{
+		ApplyFireDamageOverTime();
+	}
 }
 
 void ARWCharacterBase::ApplyFireDamageOverTime()
@@ -321,11 +329,10 @@ void ARWCharacterBase::ApplyFireDamageOverTime()
 		return;	
 	}
 	
-	if(HasAuthority())
-	{
-		StatComponent->ApplyDamage(OUTDOOR_FIRE_DAMAGE);
-	}
-	
+	// 데미지 적용
+	StatComponent->ApplyDamage(OUTDOOR_FIRE_DAMAGE);
+
+	// 1초 마다 다시 수행되도록
 	FTimerHandle FireDamageOverTimeTimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(
 		FireDamageOverTimeTimerHandle,

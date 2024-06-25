@@ -22,3 +22,8 @@ ARWAnimalPig::ARWAnimalPig()
 	
 	AnimalData = EAnimalData::Pig;
 }
+
+void ARWAnimalPig::BeginPlay()
+{
+	Super::BeginPlay();
+}
