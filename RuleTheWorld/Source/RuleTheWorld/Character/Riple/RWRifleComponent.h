@@ -20,6 +20,7 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
+	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	TScriptInterface<class IRWRifleActionInterface> RifleActionInterface;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -119,10 +120,16 @@ protected:
 private:
 	// 발사 트레이스 함수
 	UFUNCTION(Server, Reliable)
-	void ServerRPCPerformLineTrace(FVector CameraTraceStart, FVector CameraTraceEnd);
+	void ServerRPCPerformLineTrace(int32 InputRifleId, FVector CameraTraceStart, FVector CameraTraceEnd);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void NetMulticastRPCShootFire(FHitResult RifleHitResult);
+	void NetMulticastRPCShootFire(int32 InputRifleID, FHitResult RifleHitResult);
+
+	// 서버에게서 본인을 식별하기 위한 값
+	int32 RifleID;
+
+	FRotator AimingRotation = FRotator(0.0f, -50.0f, 0.0f);
+	FRotator DefaultRotation = FRotator(0.0f, -90.0f, 0.0f);
 };
 
 

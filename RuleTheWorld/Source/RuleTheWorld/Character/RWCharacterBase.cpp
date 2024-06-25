@@ -33,7 +33,7 @@ ARWCharacterBase::ARWCharacterBase()
 
 
 	// Capsule
-	GetCapsuleComponent()->InitCapsuleSize(60.f,96.f);
+	GetCapsuleComponent()->InitCapsuleSize(30.f,96.f);
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
 
 	// Movement

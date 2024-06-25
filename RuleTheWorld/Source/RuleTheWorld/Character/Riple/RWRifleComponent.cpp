@@ -21,6 +21,9 @@ constexpr uint8 LOADED_BULLET_NUM = 5;
 
 URWRifleComponent::URWRifleComponent()
 {
+	
+	PrimaryComponentTick.bCanEverTick = true;
+	
 	static ConstructorHelpers::FObjectFinder<UInputAction> AimingActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/RuleTheWorld/Input/Action/IA_Aiming.IA_Aiming'"));
 	if(nullptr != AimingActionRef.Object)
 	{
@@ -58,7 +61,8 @@ URWRifleComponent::URWRifleComponent()
 void URWRifleComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
+	SetComponentTickEnabled(true);
+	
 	BindAction();
 	
 	// Interface 설정
@@ -81,8 +85,28 @@ void URWRifleComponent::BeginPlay()
 			CrossHairWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
-	
+	// 현재 시간을 기반으로 시드 생성
+	int32 CurrentRealTime = FDateTime::Now().GetSecond() * FDateTime::Now().GetMillisecond();
+	// Rifle의 식별 ID 할당
+	RifleID = CurrentRealTime;//RandomStream.RandRange(INT32_MIN,INT32_MAX);
 }
+
+void URWRifleComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+	FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (bIsAiming)
+	{
+		UE_LOG(LogTemp, Log,TEXT("23232323"));
+		OwnerPlayer->GetMesh()->SetRelativeRotation(AimingRotation);
+	}
+	else
+	{
+		OwnerPlayer->GetMesh()->SetRelativeRotation(DefaultRotation);
+	}
+}
+
 
 void URWRifleComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -151,14 +175,20 @@ void URWRifleComponent::BindAction()
 	}
 }
 
-void URWRifleComponent::NetMulticastRPCShootFire_Implementation(FHitResult RifleHitResult)
+void URWRifleComponent::NetMulticastRPCShootFire_Implementation(int32 InputRifleID, FHitResult RifleHitResult)
 {
-	OwnerPlayer->PlayAnimMontage(RifleFireMontage, 3);
-	
-	if (FireSound)
+	// Client가 사격을 실행한 클라이언트일 경우 이미 애니메이션과 사운드가 출력되었음
+	if(RifleID != InputRifleID) // 아닌 경우에 출력
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, FireSound, OwnerPlayer->GetActorLocation());
+		OwnerPlayer->PlayAnimMontage(RifleFireMontage, 3);
+		if (FireSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, FireSound, OwnerPlayer->GetActorLocation());
+		}
 	}
+	
+	UE_LOG(LogTemp, Log, TEXT("qwe %d %d"), RifleID, InputRifleID);
+	
 
 	// Rifle HitResult의 피격위치에 나이아가라 이펙트 생성
 	if (RifleHitResult.bBlockingHit) 
@@ -176,7 +206,7 @@ void URWRifleComponent::NetMulticastRPCShootFire_Implementation(FHitResult Rifle
 				
 }
 
-void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(FVector CameraTraceStart, FVector CameraTraceEnd)
+void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(int InputRifleID, FVector CameraTraceStart, FVector CameraTraceEnd)
 {
 	
 	FHitResult CameraHitResult;
@@ -219,15 +249,11 @@ void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(FVector CameraT
 					HitCharacter->TakeDamage(AttackDamage, DamageEvent, OwnerPlayer->GetController(), OwnerPlayer);
 				}
 			}
-			else
-			{
-				
-			}
 		}
 	}
 	
 	// 총격 애니메이션 및 효과
-	NetMulticastRPCShootFire(RifleHitResult);
+	NetMulticastRPCShootFire(InputRifleID,RifleHitResult);
 }
 
 void URWRifleComponent::SetReady()
@@ -282,7 +308,7 @@ void URWRifleComponent::StartAiming()
 	}
 	bIsAiming = true;
 	OwnerPlayer->bUseControllerRotationYaw = true;
-	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -60.f,0.0f));
+	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -50.f,0.0f));
 	ServerRPCStartAiming();
 }
 
@@ -308,7 +334,9 @@ void URWRifleComponent::ServerRPCStartAiming_Implementation()
 {
 	SetAnimAiming(true);
 	OwnerPlayer->bUseControllerRotationYaw = true;
-	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -60.f,0.0f));
+
+	bIsAiming = true;
+	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -50.f,0.0f));
 	NetMulticastRPCSetAiming(true);
 }
 
@@ -316,6 +344,7 @@ void URWRifleComponent::ServerRPCCompleteAiming_Implementation()
 {
 	SetAnimAiming(false);
 	OwnerPlayer->bUseControllerRotationYaw = false;
+	bIsAiming = false;
 	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.f,0.0f));
 	NetMulticastRPCSetAiming(false);
 }
@@ -323,6 +352,14 @@ void URWRifleComponent::ServerRPCCompleteAiming_Implementation()
 
 void URWRifleComponent::NetMulticastRPCSetAiming_Implementation(uint8 _bIsAiming)
 {
+	if(_bIsAiming)
+	{
+		OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -50.f,0.0f));
+	}
+	else
+	{
+		OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.f,0.0f));
+	}
 	SetAnimAiming(_bIsAiming);
 }
 
@@ -332,7 +369,6 @@ void URWRifleComponent::Fire()
 	{
 		return;
 	}
-
 	// Viewport 크기 
 	int32 ViewportSizeX;
 	int32 ViewportSizeY;
@@ -360,7 +396,17 @@ void URWRifleComponent::Fire()
 	FVector CameraTraceEnd = CameraTraceStart + (CrosshairWorldDirection * FireRange);
 
 	// 총격에 대해 서버 RPC를 보냄
-	ServerRPCPerformLineTrace(CameraTraceStart, CameraTraceEnd);
+	ServerRPCPerformLineTrace(RifleID, CameraTraceStart, CameraTraceEnd);
+
+	// 총격 애니메이션 출력
+	OwnerPlayer->PlayAnimMontage(RifleFireMontage, 3);
+
+	// 총격 사운드 출력
+	if (FireSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, FireSound, OwnerPlayer->GetActorLocation());
+	}
+
 }
 
 void URWRifleComponent::NetMulticastRPCAnimReadyToShoot_Implementation(uint8 _bIsReadyToShoot)

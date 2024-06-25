@@ -125,6 +125,7 @@ public:
 
 	virtual void StartAiming() override;
 	virtual void StopAiming() override;
+
 	
 private:
 	FVector DefaultCameraLocation;
