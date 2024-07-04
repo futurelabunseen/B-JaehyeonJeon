@@ -252,7 +252,7 @@ float ARWCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 {
 	// EventInstigator -> 나에게 피해를 입힌 Controller, DamageCauser -> 사용한 무기 또는 빙의한 폰 (데미지를 준) 
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-
+	
 	if(this->CharacterState == ECharacterState::Dead) // 캐릭터가 죽어있는 경우에는 공격받지 
 	{
 		return 0.f;
@@ -260,8 +260,27 @@ float ARWCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 	
 	// Damage 받은 것을 StatComponent에서 적용시킴
 	StatComponent->ApplyDamage(DamageAmount);
+
+	// 죽지 않은 경우 Heart 모션
+	if (StatComponent->GetCurrentHP() > 0)
+	{
+		GetCharacterMovement()->SetMovementMode(MOVE_None);
+		PlayAnimMontage(HeartMontage);
+		MulticastRPCTakeDamageReaction();
+
+		// Lambda function to restore movement after 1 second
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]() {
+			GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		}, 1.0f, false);
+	}
 	
 	return DamageAmount;
+}
+
+void ARWCharacterBase::MulticastRPCTakeDamageReaction_Implementation()
+{
+	PlayAnimMontage(HeartMontage);
 }
 
 void ARWCharacterBase::SetDead()
@@ -289,7 +308,7 @@ void ARWCharacterBase::MulticastRPCSetDead_Implementation()
 		NiagaraEffectFire->SetVisibility(false);	
 	}
 
-	// 더 이상 충돌되지 않도록
+	// 더 이상 충돌되지 않도록 
 	SetActorEnableCollision(false);
 }
 

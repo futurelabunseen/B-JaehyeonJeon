@@ -58,6 +58,16 @@ float URWCharacterStatComponent::ApplyDamage(float InDamage)
 	return ActualDamage;
 }
 
+void URWCharacterStatComponent::HealHP(float HealingAmount)
+{
+	SetHP(CurrentHP + HealingAmount);
+}
+
+void URWCharacterStatComponent::RelieveHunger(float RelieveAmount)
+{
+	SetHunger(CurrentHunger - RelieveAmount);
+}
+
 void URWCharacterStatComponent::SetHP(float NewHP)
 {
 	CurrentHP = FMath::Clamp<float>(NewHP, 0.0f, MaxHP);

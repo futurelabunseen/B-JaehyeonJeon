@@ -41,12 +41,16 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
 	TObjectPtr<class UAnimMontage> AttackMontage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
+	TObjectPtr<class UAnimMontage> HeartMontage;
 	
 	UFUNCTION(NetMulticast, Reliable, BlueprintCallable, Category = RPC, Meta = (AllowPrivateAccess = "true"))
 	void MulticastRPCAnimalAttack();
 
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
-
+	UFUNCTION(NetMulticast, Reliable)
+	void MultiCastRPCTakeDamage();
+	
 // Dead & Respawn
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Dead, Meta = (AllowPrivateAccess = "true"))

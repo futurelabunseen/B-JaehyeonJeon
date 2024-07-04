@@ -71,5 +71,14 @@ public:
 	uint8 bIsRifleSet : 1;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
 	uint8 bIsAiming : 1;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AimOffset")
+	float AimYaw;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AimOffset")
+	float AimPitch;
+	
+	TObjectPtr<APawn> OwningPawn;
+	TObjectPtr<ACharacter> OwningCharacter;
 
+	FRotator ControlRotation;
 };

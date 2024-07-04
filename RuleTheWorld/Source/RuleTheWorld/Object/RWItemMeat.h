@@ -14,6 +14,7 @@ class RULETHEWORLD_API ARWItemMeat : public ARWInteractableActor
 {
 	GENERATED_BODY()
 
+	virtual void BeginPlay() override;
 public:
 	ARWItemMeat();
 

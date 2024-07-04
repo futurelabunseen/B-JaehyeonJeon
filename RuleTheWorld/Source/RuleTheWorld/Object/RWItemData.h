@@ -23,4 +23,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	TObjectPtr<UTexture2D> ItemTexture;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
+	float HPIncreaseAmount;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
+	float HungerDecreaseAmount;
 };

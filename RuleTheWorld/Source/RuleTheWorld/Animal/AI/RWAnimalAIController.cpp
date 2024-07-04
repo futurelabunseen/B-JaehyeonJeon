@@ -14,7 +14,7 @@ ARWAnimalAIController::ARWAnimalAIController()
 	// AI Perception
 	AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AI Perception"));
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
-	SightConfig->SightRadius = 3000; // 시야 반경 설정
+	SightConfig->SightRadius = 10000; // 시야 반경 설정
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true; // 적 감지 설정
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;

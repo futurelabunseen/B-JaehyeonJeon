@@ -8,7 +8,6 @@
 #include "Engine/DamageEvents.h"
 #include "Interface/RWTimeReachedInterface.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "Object/RWInteractableActor.h"
 
 // Sets default values
@@ -93,13 +92,15 @@ void ARWAnimalBase::AttackHitCheck()
 		UE_LOG(LogTemp, Log, TEXT("It's not has Authority"));
 		return;
 	}
+
+	if(AnimalState == EAnimalState::Dead) return; // 죽으면 공격하지 못함
 	
 	FHitResult OutHitResult;
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(Attack), true, this);
 
 	const float AttackRange = 40.0f;
 	const float AttackRadius = 50.0f;
-	const float AttackDamage = 20.0f;
+	const float AttackDamage = 15.0f;
 	const FVector Start = GetActorLocation() + GetActorForwardVector() * GetCapsuleComponent()->GetScaledCapsuleRadius();
 	const FVector End = Start + GetActorForwardVector() * AttackRange;
 
@@ -123,8 +124,25 @@ float ARWAnimalBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 	}
 	StatComponent->ApplyDamage(DamageAmount);
 
+	if (StatComponent->CurrentHP > 0)
+	{
+		GetCharacterMovement()->SetMovementMode(MOVE_None);
+		PlayAnimMontage(HeartMontage);
+		MultiCastRPCTakeDamage();
+
+		// Lambda function to restore movement after 1 second
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]() {
+			GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		}, 1.0f, false);
+	}
 	return DamageAmount;
 }
+void ARWAnimalBase::MultiCastRPCTakeDamage_Implementation()
+{
+	PlayAnimMontage(HeartMontage);
+}
+
 
 void ARWAnimalBase::MulticastRPCAnimalAttack_Implementation()
 {
@@ -171,7 +189,7 @@ void ARWAnimalBase::SpawnMeat()
 	FVector SpawnLocation = this->GetActorLocation();
 	FRotator SpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
 
-	uint8 SpawnNum = RandomStream.RandRange(1, 4);
+	uint8 SpawnNum = RandomStream.RandRange(1, 1); // 일단 1로 설정 
 	for (int i = 0; i < SpawnNum; i++)
 	{
 		// 매 아이템 스폰 시 다른 지점에 떨어지도록
@@ -222,7 +240,7 @@ void ARWAnimalBase::ActivateAnimal()
 	FRandomStream RandomStream;
 	RandomStream.Initialize(CurrentRealTime);
 			
-	FVector NewLocation = FVector(RandomStream.FRandRange(-5000.f, 5000.f), RandomStream.FRandRange(-5000.f, 5000.f),  RandomStream.FRandRange(0.f, 100.f));
+	FVector NewLocation = FVector(RandomStream.FRandRange(-5000.f, 5000.f), RandomStream.FRandRange(-5000.f, 5000.f),  1000.f);
 
 	SetActorLocation(NewLocation);
 

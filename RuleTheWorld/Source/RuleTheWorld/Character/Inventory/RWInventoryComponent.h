@@ -33,7 +33,7 @@ protected:
 
 	// Item Data Setting
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-	TMap<EItemData, TObjectPtr<class URWItemData>> ItemDataAssetMap; // <EItemData : Item BP>
+	TMap<EItemData, TObjectPtr<class URWItemData>> ItemDataAssetMap; // <EItemData : Item Data Asset>
 
 
 	virtual TMap<EItemData, TObjectPtr<URWItemData>> GetItemDataAssetMap() override;
@@ -53,6 +53,14 @@ protected:
 	UFUNCTION()
 	void OnRep_CopiedInventoryToWidget();
 	
+	void UseItem(int32 ItemIndex) override;
+	UFUNCTION(Server, Reliable)
+	void ServerRPCUseItem(int32 ItemIndex);
+	
+	void DeleteItem(int32 ItemIndex) override;
+	UFUNCTION(Server, Reliable)
+	void ServerRPCDeleteItem(int32 ItemIndex); 
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category =  Input, Meta = (AllowPrivateAccess = "True"))
 	TObjectPtr<class UInputAction> InventoryWidgetOnScreenAction;
@@ -68,15 +76,15 @@ protected:
 	UFUNCTION(Server, WithValidation, Reliable)
 	void ServerRPCGetItem(EItemData ItemData);
 
-	void UseItem();
-	void DeleteItem();
+
 
 	void BindAction();
 	void InitializeInterface();
 
 	int32 GetItemIndex(EItemData ItemData);
 	void AddInventoryItemNums(int32 ItemIndex);
-
+	
+	
 	
 // Inventory UI
 	

@@ -36,4 +36,8 @@ public:
 	virtual FInventory GetInventoryData() = 0;
 
 	virtual void SetUpInventoryWidget(class URWInventoryWidget* InventoryWidget) = 0;
+
+	virtual void UseItem(int32 ItemIndex) = 0;
+
+	virtual void DeleteItem(int32 ItemIndex) = 0;
 };

@@ -44,8 +44,14 @@ public:
 	
 	FORCEINLINE float GetMaxHP() { return MaxHP; }
 	FORCEINLINE float GetCurrentHP() { return CurrentHP; }
+	
 	// 데미지 처리
 	float ApplyDamage(float InDamage);
+
+	// 체력 회복
+	void HealHP(float HealingAmount);
+	
+	void RelieveHunger(float RelieveAmount);
 	
 	FORCEINLINE float GetMaxHunger() { return MaxHunger; }
 	FORCEINLINE float GetCurrentHunger() { return CurrentHunger; }

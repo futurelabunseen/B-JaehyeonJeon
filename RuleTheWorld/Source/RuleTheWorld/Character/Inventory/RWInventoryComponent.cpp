@@ -5,9 +5,11 @@
 
 #include "EnhancedInputComponent.h"
 #include "Character/RWCharacterPlayer.h"
+#include "Character/Stat/RWCharacterStatComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Interface/RWCollisionedItemInterface.h"
 #include "Object/RWInteractableActor.h"
+#include "Object/RWItemData.h"
 #include "UI/RWInventoryWidget.h"
 
 
@@ -144,13 +146,6 @@ void URWInventoryComponent::OnPickUpComplete()
 	bIsProcessingPickUp = false;
 }
 
-void URWInventoryComponent::UseItem()
-{
-}
-
-void URWInventoryComponent::DeleteItem()
-{
-}
 
 void URWInventoryComponent::InitializeInterface()
 {
@@ -182,12 +177,26 @@ void URWInventoryComponent::SetInventoryWidgetVisibility()
 		if(InventoryWidgetInstance->IsVisible())
 		{
 			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+			
+			// 마우스 커서 보이도록
+			APlayerController* Controller = GetWorld()->GetFirstPlayerController();
+			Controller->bShowMouseCursor = false;
+
+			// 마우스 인터페이스 모드 설정
+			Controller->SetInputMode(FInputModeGameOnly());
 		}
 		else
 		{
 			OnRepInventory.Broadcast(); // Inventory를 열 떄, Delegate로 Widget이 inventory 정보를 최신화 하도록 함
 			
 			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+			
+			// 마우스 커서 보이도록
+			APlayerController* Controller = GetWorld()->GetFirstPlayerController();
+			Controller->bShowMouseCursor = true;
+
+			// 마우스 인터페이스 모드 설정
+			Controller->SetInputMode(FInputModeGameAndUI());
 		}
 	}
 }
@@ -284,6 +293,88 @@ void URWInventoryComponent::OnRep_CopiedInventoryToWidget()
 {
 	UE_LOG(LogTemp, Log, TEXT("Inventory Rep"));
 	OnRepInventory.Broadcast();
+}
+
+void URWInventoryComponent::UseItem(int32 ItemIndex)
+{
+	// 클라이언트에서 한 번 검사 
+	if(Inventory.InventoryItemNums[ItemIndex] < 1 || Inventory.InventoryItemSubjects[ItemIndex] == EItemData::None)
+	{
+		return;
+	}
+	ServerRPCUseItem(ItemIndex);
+	
+	if(GetOwner()->HasAuthority()) // 서버도 인벤토리 최신화
+	{
+		OnRepInventory.Broadcast();
+	}
+}
+
+void URWInventoryComponent::ServerRPCUseItem_Implementation(int32 ItemIndex)
+{
+	// 서버에서 한 번 더 검사
+	if(Inventory.InventoryItemNums[ItemIndex] < 1 || Inventory.InventoryItemSubjects[ItemIndex] == EItemData::None)
+	{
+		return;
+	}
+	
+	// 아이템 효과 적용
+	APlayerController* Controller = Cast<APlayerController>(GetOwner());
+	UActorComponent* ActorComponent = Controller->GetPawn()->GetComponentByClass(URWCharacterStatComponent::StaticClass());
+	URWCharacterStatComponent* StatComponent = Cast<URWCharacterStatComponent>(ActorComponent);
+	
+	EItemData ItemSubject = Inventory.InventoryItemSubjects[ItemIndex];
+	URWItemData* ItemData = ItemDataAssetMap[ItemSubject];
+	if(ItemData)
+	{
+		// 아이템 힐링
+		float HealingAmount = ItemData->HPIncreaseAmount;
+		UE_LOG(LogTemp, Log, TEXT(" Healing  : %f "), HealingAmount);
+	
+		if(HealingAmount > 0)
+		{
+			StatComponent->HealHP(HealingAmount);	
+		}
+
+		// 허기 회복
+		float RelieveAmount = ItemData->HungerDecreaseAmount;
+		UE_LOG(LogTemp, Log, TEXT(" RelieveAmount  : %f "), RelieveAmount);
+		if(RelieveAmount > 0)
+		{
+			StatComponent->RelieveHunger(RelieveAmount);
+		}
+
+		// 사용한 아이템의 수를 감소
+		Inventory.InventoryItemNums[ItemIndex]--;
+		if(Inventory.InventoryItemNums[ItemIndex] == 0)
+		{
+			// 해당 아이템을 소진한 경우 None으로 변경
+			Inventory.InventoryItemSubjects[ItemIndex] = EItemData::None;
+		}
+	}
+	
+}
+
+void URWInventoryComponent::DeleteItem(int32 ItemIndex)
+{
+	// 클라이언트에서 한 번 검사 
+	if(Inventory.InventoryItemNums[ItemIndex] < 1 || Inventory.InventoryItemSubjects[ItemIndex] == EItemData::None)
+	{
+		return;
+	}
+	ServerRPCDeleteItem(ItemIndex);
+}
+
+void URWInventoryComponent::ServerRPCDeleteItem_Implementation(int32 ItemIndex)
+{
+	// 서버에서 한 번 더 검사
+	if(Inventory.InventoryItemNums[ItemIndex] < 1 || Inventory.InventoryItemSubjects[ItemIndex] == EItemData::None)
+	{
+		return;
+	}
+
+	Inventory.InventoryItemNums[ItemIndex] = 0;
+	Inventory.InventoryItemSubjects[ItemIndex] = EItemData::None;
 }
 
 void URWInventoryComponent::SetUpInventoryWidget(URWInventoryWidget* InventoryWidget)

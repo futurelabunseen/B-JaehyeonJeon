@@ -27,4 +27,5 @@ public:
 	// Inventory에 시용할 이미지 텍스쳐
 	virtual TMap<EItemData, TObjectPtr<class URWItemData>> GetItemDataAssetMap() = 0;
 
+
 };

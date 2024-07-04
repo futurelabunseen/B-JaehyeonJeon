@@ -36,9 +36,6 @@ void ARWGameState::BeginPlay()
 	// Set Widget 
 	EventWidgetInstancing();
 	EventWidgetInstance->AddToViewport();
-
-
-	
 	
 	// Start : Day
 	SetDayEvent();

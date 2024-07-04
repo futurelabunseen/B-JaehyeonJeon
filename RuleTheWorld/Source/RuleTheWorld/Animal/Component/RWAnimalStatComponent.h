@@ -28,7 +28,7 @@ public:
 	UPROPERTY(VisibleInstanceOnly, Category = "Stat")
 	float MaxHP;
 	// Transient 키워드로 디스크에 저장되지 않도록 구현할 수 있음
-	UPROPERTY(Transient, VisibleInstanceOnly, Category = "Stat")
+	UPROPERTY(BlueprintReadWrite, Transient, VisibleInstanceOnly, Category = "Stat")
 	float CurrentHP;
 
 	void SetHP(float NewHP);

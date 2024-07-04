@@ -5,12 +5,15 @@
 
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Math/RandomStream.h"
+#include "Net/UnrealNetwork.h"
 
 URWAnimInstance::URWAnimInstance()
 {
 	MovingThreshold = 3.0f;
 	JumpingThreshold = 50.0f;
+	
 }
 
 void URWAnimInstance::NativeInitializeAnimation()
@@ -23,7 +26,6 @@ void URWAnimInstance::NativeInitializeAnimation()
 		Movement = Owner->GetCharacterMovement();
 	}
 
-
 	bIsRifleSet = false;
 	bIsAiming = false;
 }
@@ -31,7 +33,7 @@ void URWAnimInstance::NativeInitializeAnimation()
 void URWAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-
+	
 	// MovementComponent에서 값을 받아옴
 	if(Movement)
 	{
@@ -46,5 +48,30 @@ void URWAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		CrossProductZ = CrossProductResult.Z;
 		// 앞뒤 이동 판별
 		DotProductValue = FVector::DotProduct(Velocity, GetOwningActor()->GetActorForwardVector());
+		
+		// 소유자 Pawn이 있는지 확인
+		if (!OwningPawn)
+		{
+			OwningPawn = TryGetPawnOwner();
+			if (OwningPawn)
+			{
+				OwningCharacter = Cast<ACharacter>(OwningPawn);
+			}
+		}
+			
+		// 소유자 Pawn이 유효한지 확인
+		if (!OwningPawn) {
+			return;
+		}
+
+		// 카메라 방향 가져오기
+		//FRotator ControlRotation = PlayerController->GetControlRotation();
+		FRotator ActorRotation = OwningPawn->GetActorRotation();
+
+		// AimOffset 계산
+		FRotator DeltaRot = UKismetMathLibrary::NormalizedDeltaRotator(ControlRotation, ActorRotation);
+		
+		AimYaw = DeltaRot.Yaw;
+		AimPitch = DeltaRot.Pitch;
 	}
 }

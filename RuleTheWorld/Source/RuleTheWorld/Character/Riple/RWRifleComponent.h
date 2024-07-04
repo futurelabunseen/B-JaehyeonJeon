@@ -130,6 +130,10 @@ private:
 
 	FRotator AimingRotation = FRotator(0.0f, -50.0f, 0.0f);
 	FRotator DefaultRotation = FRotator(0.0f, -90.0f, 0.0f);
+
+	// Aim offsets
+	UPROPERTY(Replicated, EditAnywhere, Category = "Animation")
+	FRotator ControlRotation;
 };
 
 

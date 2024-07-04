@@ -3,6 +3,7 @@
 
 #include "UI/RWInventoryWidget.h"
 
+#include "Components/Button.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Interface/RWItemDataInterface.h"
@@ -35,6 +36,9 @@ void URWInventoryWidget::NativeConstruct()
 		// Declare : RWInventoryInterface , Define : RWInventoryComponent
 		InventoryWidget->SetUpInventoryWidget(this);
 	}
+
+	//Item Use Button Binding
+	BindItemUseBtn();
 }
 
 void URWInventoryWidget::InventoryCopy()
@@ -65,6 +69,140 @@ void URWInventoryWidget::SetItemText(UTextBlock* TextBlock, const uint8& ItemNum
 	}
 }
 
+void URWInventoryWidget::BindItemUseBtn()
+{
+	if (ItemUseBtn0)
+	{
+		ItemUseBtn0->OnClicked.AddDynamic(this, &URWInventoryWidget::UseItemHandler0);
+	}
+	if (ItemUseBtn1)
+	{
+		ItemUseBtn1->OnClicked.AddDynamic(this, &URWInventoryWidget::UseItemHandler1);
+	}
+	if (ItemUseBtn2)
+	{
+		ItemUseBtn2->OnClicked.AddDynamic(this, &URWInventoryWidget::UseItemHandler2);
+	}
+	if (ItemUseBtn3)
+	{
+		ItemUseBtn3->OnClicked.AddDynamic(this, &URWInventoryWidget::UseItemHandler3);
+	}
+	if (ItemUseBtn4)
+	{
+		ItemUseBtn4->OnClicked.AddDynamic(this, &URWInventoryWidget::UseItemHandler4);
+	}
+	if (ItemUseBtn5)
+	{
+		ItemUseBtn5->OnClicked.AddDynamic(this, &URWInventoryWidget::UseItemHandler5);
+	}
+	if (ItemUseBtn6)
+	{
+		ItemUseBtn6->OnClicked.AddDynamic(this, &URWInventoryWidget::UseItemHandler6);
+	}
+	if (ItemUseBtn7)
+	{
+		ItemUseBtn0->OnClicked.AddDynamic(this, &URWInventoryWidget::UseItemHandler7);
+	}
+	if (ItemUseBtn8)
+	{
+		ItemUseBtn8->OnClicked.AddDynamic(this, &URWInventoryWidget::UseItemHandler8);
+	}
+	if (ItemUseBtn9)
+	{
+		ItemUseBtn9->OnClicked.AddDynamic(this, &URWInventoryWidget::UseItemHandler9);
+	}
+	
+}
+
+void URWInventoryWidget::UseItemHandler0()
+{
+	IRWInventoryWidgetInterface* InventoryWidget =  Cast<IRWInventoryWidgetInterface>(InventoryComponent);
+	if(InventoryWidget)
+	{
+		InventoryWidget->UseItem(0);
+	}
+}
+
+void URWInventoryWidget::UseItemHandler1()
+{
+	IRWInventoryWidgetInterface* InventoryWidget =  Cast<IRWInventoryWidgetInterface>(InventoryComponent);
+	if(InventoryWidget)
+	{
+		InventoryWidget->UseItem(1);
+	}
+}
+
+void URWInventoryWidget::UseItemHandler2()
+{
+	IRWInventoryWidgetInterface* InventoryWidget =  Cast<IRWInventoryWidgetInterface>(InventoryComponent);
+	if(InventoryWidget)
+	{
+		InventoryWidget->UseItem(2);
+	}
+}
+
+void URWInventoryWidget::UseItemHandler3()
+{
+	IRWInventoryWidgetInterface* InventoryWidget =  Cast<IRWInventoryWidgetInterface>(InventoryComponent);
+	if(InventoryWidget)
+	{
+		InventoryWidget->UseItem(3);
+	}
+}
+
+void URWInventoryWidget::UseItemHandler4()
+{
+	IRWInventoryWidgetInterface* InventoryWidget =  Cast<IRWInventoryWidgetInterface>(InventoryComponent);
+	if(InventoryWidget)
+	{
+		InventoryWidget->UseItem(4);
+	}
+}
+
+void URWInventoryWidget::UseItemHandler5()
+{
+	IRWInventoryWidgetInterface* InventoryWidget =  Cast<IRWInventoryWidgetInterface>(InventoryComponent);
+	if(InventoryWidget)
+	{
+		InventoryWidget->UseItem(5);
+	}
+}
+
+void URWInventoryWidget::UseItemHandler6()
+{
+	IRWInventoryWidgetInterface* InventoryWidget =  Cast<IRWInventoryWidgetInterface>(InventoryComponent);
+	if(InventoryWidget)
+	{
+		InventoryWidget->UseItem(6);
+	}
+}
+
+void URWInventoryWidget::UseItemHandler7()
+{
+	IRWInventoryWidgetInterface* InventoryWidget =  Cast<IRWInventoryWidgetInterface>(InventoryComponent);
+	if(InventoryWidget)
+	{
+		InventoryWidget->UseItem(7);
+	}
+}
+
+void URWInventoryWidget::UseItemHandler8()
+{
+	IRWInventoryWidgetInterface* InventoryWidget =  Cast<IRWInventoryWidgetInterface>(InventoryComponent);
+	if(InventoryWidget)
+	{
+		InventoryWidget->UseItem(8);
+	}
+}
+
+void URWInventoryWidget::UseItemHandler9()
+{
+	IRWInventoryWidgetInterface* InventoryWidget =  Cast<IRWInventoryWidgetInterface>(InventoryComponent);
+	if(InventoryWidget)
+	{
+		InventoryWidget->UseItem(9);
+	}
+}
 
 
 void URWInventoryWidget::BindTexturesFromInterface()

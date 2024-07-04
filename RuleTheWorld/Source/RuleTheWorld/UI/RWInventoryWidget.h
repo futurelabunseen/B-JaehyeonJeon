@@ -105,4 +105,58 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void SetItemText(UTextBlock* TextBlock, const uint8& ItemNum);
+
+// Item use Button
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UButton> ItemUseBtn0;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UButton> ItemUseBtn1;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UButton> ItemUseBtn2;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UButton> ItemUseBtn3;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UButton> ItemUseBtn4;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UButton> ItemUseBtn5;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UButton> ItemUseBtn6;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UButton> ItemUseBtn7;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UButton> ItemUseBtn8;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<class UButton> ItemUseBtn9;
+protected:
+	void BindItemUseBtn();
+	
+	UFUNCTION()
+	void UseItemHandler0();
+	UFUNCTION()
+	void UseItemHandler1();
+	UFUNCTION()
+	void UseItemHandler2();
+	UFUNCTION()
+	void UseItemHandler3();
+	UFUNCTION()
+	void UseItemHandler4();
+	UFUNCTION()
+	void UseItemHandler5();
+	UFUNCTION()
+	void UseItemHandler6();
+	UFUNCTION()
+	void UseItemHandler7();
+	UFUNCTION()
+	void UseItemHandler8();
+	UFUNCTION()
+	void UseItemHandler9();
 };

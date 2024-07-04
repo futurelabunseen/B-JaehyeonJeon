@@ -63,7 +63,9 @@ private:
 	// 현재 생성된 동물의 수와 '오늘'의 최대 수를 Map으로 저장
 	// Map<동물 클래스, <Max, Current>>
 	TMap<EAnimalData, TArray<int32>> AnimalNumMap;
-	
+
+	void HandleActivateAnimal();
+
 	// 날짜 변경 시 변경된 동물의 수에 맞게 스폰
 	void DayChangeSpawnAnimals();
 

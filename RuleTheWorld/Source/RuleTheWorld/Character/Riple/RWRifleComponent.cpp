@@ -48,6 +48,8 @@ URWRifleComponent::URWRifleComponent()
 		FireAction = FireActionRef.Object;
 	}
 	
+	SetIsReplicatedByDefault(true);
+	
 	// 초기 값 설정
 	FireRange = FIRE_RANGE; // 발사 거리
 	BulletDamage = BULLET_DAMAGE;
@@ -96,10 +98,19 @@ void URWRifleComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	// 리타기팅 과정에서 틀어진 애니메이션을 보강하기 위해...
 	if (bIsAiming)
 	{
-		UE_LOG(LogTemp, Log,TEXT("23232323"));
+		AController* Controller = OwnerPlayer->GetController();
+		if(Controller)
+		{
+			ControlRotation = OwnerPlayer->GetController()->GetControlRotation();
+		}
+		
 		OwnerPlayer->GetMesh()->SetRelativeRotation(AimingRotation);
+		URWAnimInstance* RWAnimInstance = RifleActionInterface->GetAnimInstance();;
+		RWAnimInstance->ControlRotation = ControlRotation;
+
 	}
 	else
 	{
@@ -116,6 +127,7 @@ void URWRifleComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(URWRifleComponent, bIsAiming);
 	DOREPLIFETIME(URWRifleComponent, BulletNum);
 	DOREPLIFETIME(URWRifleComponent, LoadedBullet);
+	DOREPLIFETIME(URWRifleComponent, ControlRotation);
 }
 
 
@@ -197,12 +209,12 @@ void URWRifleComponent::NetMulticastRPCShootFire_Implementation(int32 InputRifle
 		UE_LOG(LogTemp, Log, TEXT("Rifle : %f, %f, %f"), RifleHitResult.Location.X, RifleHitResult.Location.Y, RifleHitResult.Location.Z);
 	}
 	
-	// 동물이 맞은 경우 점프
+	/*// 동물이 맞은 경우 점프
 	ARWAnimalBase* HitAnimal = Cast<ARWAnimalBase>(RifleHitResult.GetActor());
 	if(HitAnimal)
 	{
 		HitAnimal->Jump();
-	}
+	}*/
 				
 }
 
@@ -244,7 +256,7 @@ void URWRifleComponent::ServerRPCPerformLineTrace_Implementation(int InputRifleI
 				ACharacter* HitCharacter = Cast<ACharacter>(HitActor);
 				if(HitCharacter)
 				{
-					float AttackDamage = 100.0f;
+					float AttackDamage = 30.0f;
 					FDamageEvent DamageEvent;
 					HitCharacter->TakeDamage(AttackDamage, DamageEvent, OwnerPlayer->GetController(), OwnerPlayer);
 				}
@@ -260,13 +272,20 @@ void URWRifleComponent::SetReady()
 {
 	if(bIsReadyToShoot) 
 	{
-		// 준비 취소
+		if(bIsAiming) // Aim 중이었으면 취소하는 기능 <- Ready 취소보다 먼저 수행되어야 함. 
+		{
+			StopAiming();
+			bIsAiming = false;
+		}
 		
+		// 준비 취소
 		bIsReadyToShoot = false;
-		bIsAiming = false;
+
 		ServerRPCAbortReady();
 		// 카메라 원래 위치로
 		RifleActionInterface->StopAiming();
+		
+	
 		
 		SetAnimReadyToShoot(false);
 	}
@@ -308,7 +327,6 @@ void URWRifleComponent::StartAiming()
 	}
 	bIsAiming = true;
 	OwnerPlayer->bUseControllerRotationYaw = true;
-	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -50.f,0.0f));
 	ServerRPCStartAiming();
 }
 
@@ -323,10 +341,8 @@ void URWRifleComponent::StopAiming()
 	{
 		CrossHairWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 	}
-	
 	bIsAiming = false;
 	OwnerPlayer->bUseControllerRotationYaw = false;
-	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.f,0.0f));
 	ServerRPCCompleteAiming();
 }
 
@@ -336,7 +352,6 @@ void URWRifleComponent::ServerRPCStartAiming_Implementation()
 	OwnerPlayer->bUseControllerRotationYaw = true;
 
 	bIsAiming = true;
-	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -50.f,0.0f));
 	NetMulticastRPCSetAiming(true);
 }
 
@@ -345,21 +360,14 @@ void URWRifleComponent::ServerRPCCompleteAiming_Implementation()
 	SetAnimAiming(false);
 	OwnerPlayer->bUseControllerRotationYaw = false;
 	bIsAiming = false;
-	OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.f,0.0f));
 	NetMulticastRPCSetAiming(false);
 }
 
 
 void URWRifleComponent::NetMulticastRPCSetAiming_Implementation(uint8 _bIsAiming)
 {
-	if(_bIsAiming)
-	{
-		OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -50.f,0.0f));
-	}
-	else
-	{
-		OwnerPlayer->GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.f,0.0f));
-	}
+	bIsAiming = _bIsAiming;
+	
 	SetAnimAiming(_bIsAiming);
 }
 

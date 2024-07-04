@@ -9,12 +9,19 @@
 
 #include "GameFramework/GameState.h"
 #include "GameFramework/PlayerState.h"
-#include "Player/RWPlayerController.h"
 
-constexpr float START_TIME = 120.f; // Game Start 06:00  120
+constexpr float START_TIME = 240.f; // Game Start 06:00(120)  시연을 위해 12:00로설정
 constexpr float ONE_DAY = 480.f; // 8min(Real Time) = 1Day / 1min = 3Hours / 20sec = 1Hour
 constexpr int ONE_HOUR = 20;
-constexpr int WOLF_INCREASE_BY_DAY = 5;
+constexpr int WOLF_INCREASE_BY_DAY = 3;
+
+// 06~18시 돼지&여우 리스폰, 18:00 ~ 24:00 늑대
+constexpr float NEW_DAY_TIME = 0.f;
+constexpr float MORNING_START_TIME = 120.f;
+constexpr float MORNING_END_TIME = 360.f;
+constexpr float EVENING_START_TIME = 360.f;
+constexpr float EVENING_END_TIME = 480.f;
+constexpr float INTERVAL = 40.f; // 두 시간에 한 번씩 
 
 ARWGameMode::ARWGameMode()
 {
@@ -72,14 +79,14 @@ ARWGameMode::ARWGameMode()
 	
 	// Day
 	CurrentTime = START_TIME;
-	DayScore = 1;
+	DayScore = 0;
 	DayProgressPercent = START_TIME / ONE_DAY;
 
 	// Animal
 	// Set Initial Value
-	AnimalNumMap.Add(EAnimalData::Wolf, {10, 0});
+	AnimalNumMap.Add(EAnimalData::Wolf, {5, 0});
 	AnimalNumMap.Add(EAnimalData::Pig, {20, 0});
-	AnimalNumMap.Add(EAnimalData::Fox, {2, 0});
+	AnimalNumMap.Add(EAnimalData::Fox, {1, 0});
 
 }
 
@@ -99,6 +106,29 @@ void ARWGameMode::Tick(float DeltaSeconds)
 	UpdateTime(DeltaSeconds);
 }
 
+
+// Function to spawn animals (excluding wolves) and broadcast morning event
+void ARWGameMode::HandleActivateAnimal()
+{
+	if (CurrentTime >= MORNING_START_TIME && CurrentTime < MORNING_END_TIME)
+	{
+		if (FMath::Fmod(CurrentTime, INTERVAL) < 1.f) 
+		{
+			DayChangeSpawnAnimals(); // 늑대 제외 동물 스폰
+			OnTimeReachedMorning.Broadcast(); // 아침이 되었음을 알림
+		}
+	}
+	else
+	{
+		if (FMath::Fmod(CurrentTime, INTERVAL) < 1.f) 
+		{
+			NightWolfSpawn(); // 늑대 스폰
+			OnTimeReachedNight.Broadcast(); // 저녁이 되었음을 알림
+		}
+	}
+}
+
+
 void ARWGameMode::UpdateTime(float DeltaSeconds)
 {
 	CurrentTime += DeltaSeconds;
@@ -109,16 +139,7 @@ void ARWGameMode::UpdateTime(float DeltaSeconds)
 		DayChange();
 		UE_LOG(LogTemp, Log, TEXT("Game State - Day : %d CurrentTime : %f ProgressPercent : %f"), DayScore, CurrentTime, DayProgressPercent);
 	}
-	else if (CurrentTime >= 120.f && CurrentTime < 121.f)
-	{
-		DayChangeSpawnAnimals(); // 늑대 제외 동물 스폰
-		OnTimeReachedMorning.Broadcast(); // 아침이 되었음을 알림
-	}
-	else if (CurrentTime >= 360.f && CurrentTime < 361.f)
-	{
-		NightWolfSpawn(); // 늑대 스폰
-		OnTimeReachedNight.Broadcast(); // 저녁이 되었음을 알림
-	}
+	HandleActivateAnimal();
 	
 	// 하루가 얼마나 지났는지 퍼센트로 표시
 	DayProgressPercent = 100 * (CurrentTime / ONE_DAY);
@@ -170,7 +191,7 @@ void ARWGameMode::DayChangeSpawnAnimals()
 			FRandomStream RandomStream;
 			RandomStream.Initialize(CurrentRealTime);
 			
-			FVector SpawnLocation = FVector(100.0f + RandomStream.FRandRange(-5000.f, 5000.f), 100.0f + RandomStream.FRandRange(-5000.f, 5000.f), RandomStream.FRandRange(0.f, 100.f));
+			FVector SpawnLocation = FVector(100.0f + RandomStream.FRandRange(-5000.f, 5000.f), 100.0f + RandomStream.FRandRange(-5000.f, 5000.f), 1000.f);
 			FRotator SpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
 			
 			GetWorld()->SpawnActor<ACharacter>(AnimalClass.Value, SpawnLocation, SpawnRotation);
@@ -196,7 +217,7 @@ void ARWGameMode::NightWolfSpawn()
 		FRandomStream RandomStream;
 		RandomStream.Initialize(CurrentRealTime);
 			
-		FVector SpawnLocation = FVector(100.0f + RandomStream.FRandRange(-5000.f, 5000.f), 100.0f + RandomStream.FRandRange(-5000.f, 5000.f), 1000.0f  + RandomStream.FRandRange(0.f, 100.f));
+		FVector SpawnLocation = FVector(100.0f + RandomStream.FRandRange(-5000.f, 5000.f), 100.0f + RandomStream.FRandRange(-5000.f, 5000.f), 1000.0f);
 		FRotator SpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
 			
 		GetWorld()->SpawnActor<ACharacter>(WolfClass, SpawnLocation, SpawnRotation);
